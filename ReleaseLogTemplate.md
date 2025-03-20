@@ -44,7 +44,7 @@ For remaining open questions on this module, please see [Initial Claim Module Op
 
 ### Monetary Determination Module
 
-**vN.N** [Monetary Determination Module spec](Link to “view code at this commit”) - *Month Day, Year*<br>
+[**vN.N** Monetary Determination Module spec](Link to “view code at this commit”) - *Month Day, Year*<br>
 Add description of updates here <br>
 For remaining open questions on this module, please see [Monetary Determination Module Open Questions](https://github.com/NASWA-OpenUI/Open-UI-Framework/blob/main/Module%20Documentation/Monetary%20Determination%20Module/Monetary%20Determination%20Module%20Open%20Questions.md)
 
