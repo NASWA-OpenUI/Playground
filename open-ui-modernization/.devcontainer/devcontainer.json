@@ -1,1 +1,13 @@
-
+// .devcontainer/devcontainer.json
+{
+  "name": "UI Modernization Demo",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [3000, 3001, 3002, 3003, 8000, 8001],
+  "extensions": [
+    "ms-azuretools.vscode-docker",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ]
+}
