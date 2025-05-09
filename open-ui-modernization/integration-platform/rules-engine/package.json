@@ -1,0 +1,14 @@
+{
+  "name": "rules-engine",
+  "version": "1.0.0",
+  "description": "UI Modernization Rules Engine",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "fs-extra": "^11.1.0"
+  }
+}
