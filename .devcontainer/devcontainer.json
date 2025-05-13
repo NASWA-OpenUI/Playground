@@ -2,7 +2,7 @@
   "name": "UI Modernization Demo",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "claimant-services",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/Playground",
   
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
