@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Rules Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1976d2;
+            text-align: center;
+        }
+        .rule-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .current-rate {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2e7d32;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        input[type="number"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #1976d2;
+            border-radius: 4px;
+            width: 100px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1565c0;
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        .error {
+            background-color: #ffcdd2;
+            color: #c62828;
+        }
+        .formula {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Business Rules Administration</h1>
+        
+        <div class="rule-section">
+            <h2>UI Benefit Calculation Tax Rate</h2>
+            <div class="current-rate">
+                Current Rate: <span id="currentRate">Loading...</span>
+            </div>
+            <div class="formula">
+                Weekly Benefit = Total Wages / 52 × <span id="formulaRate">?</span>
+            </div>
+            <div class="input-group">
+                <label for="newRate">New Rate:</label>
+                <input type="number" id="newRate" min="0" max="1" step="0.1" value="0.5">
+                <button onclick="updateTaxRate()">Update Rate</button>
+            </div>
+            <div id="message" class="message" style="display: none;"></div>
+        </div>
+
+        <div class="rule-section">
+            <h3>Rule Information</h3>
+            <p><strong>Min Weekly Benefit:</strong> $50</p>
+            <p><strong>Max Weekly Benefit:</strong> $450</p>
+            <p><strong>Benefit Duration:</strong> 26 weeks</p>
+            <p><small>Last Updated: <span id="lastUpdated">-</span></small></p>
+        </div>
+    </div>
+
+    <script>
+        // Load current rules on page load
+        async function loadCurrentRules() {
+            try {
+                const response = await fetch('/api/rules');
+                const data = await response.json();
+                const currentRate = data.rules.taxRate.value;
+                document.getElementById('currentRate').textContent = currentRate;
+                document.getElementById('formulaRate').textContent = currentRate;
+                document.getElementById('newRate').value = currentRate;
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+            } catch (error) {
+                console.error('Error loading rules:', error);
+                showMessage('Error loading current rules', 'error');
+            }
+        }
+
+        // Update tax rate
+        async function updateTaxRate() {
+            const newRate = parseFloat(document.getElementById('newRate').value);
+            
+            if (isNaN(newRate) || newRate < 0 || newRate > 1) {
+                showMessage('Please enter a valid rate between 0 and 1', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/update-tax-rate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ newRate })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('currentRate').textContent = newRate;
+                    document.getElementById('formulaRate').textContent = newRate;
+                    document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+                    showMessage(`Tax rate updated successfully to ${newRate}`, 'success');
+                } else {
+                    showMessage(data.error || 'Error updating tax rate', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating tax rate:', error);
+                showMessage('Error communicating with server', 'error');
+            }
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Load rules when page loads
+        window.onload = loadCurrentRules;
+    </script>
+</body>
+</html>

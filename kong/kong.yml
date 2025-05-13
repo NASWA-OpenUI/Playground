@@ -1,0 +1,42 @@
+_format_version: "3.0"
+
+services:
+  # Claimant Services API (React frontend calls)
+  - name: claimant-api
+    url: http://claimant-services:3000
+    routes:
+      - name: claimant-route
+        paths:
+          - /claimant
+
+  # Claims Processing Service
+  - name: claims-processing-api
+    url: http://claims-processing:3002
+    routes:
+      - name: claims-route
+        paths:
+          - /claims
+
+  # Employer Services
+  - name: employer-services-api
+    url: http://employer-services:3003
+    routes:
+      - name: employer-route
+        paths:
+          - /employer
+
+  # Benefits Administration
+  - name: benefits-admin-api
+    url: http://benefits-admin:3004
+    routes:
+      - name: benefits-route
+        paths:
+          - /benefits
+
+  # Business Rules Engine
+  - name: business-rules-api
+    url: http://business-rules:3001
+    routes:
+      - name: rules-route
+        paths:
+          - /rules
