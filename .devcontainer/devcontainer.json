@@ -4,13 +4,6 @@
   "service": "claimant-services",
   "workspaceFolder": "/workspaces/Playground",
   
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers/features/python:1": {},
-    "ghcr.io/devcontainers/features/ruby:1": {}
-  },
-
   "customizations": {
     "vscode": {
       "extensions": [
