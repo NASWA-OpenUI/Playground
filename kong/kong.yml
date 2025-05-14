@@ -25,7 +25,7 @@ services:
         paths:
           - /employer
 
-  # Benefits Administration
+  # Benefits Administration (.NET/C#)
   - name: benefits-admin-api
     url: http://benefits-admin:3004
     routes:
