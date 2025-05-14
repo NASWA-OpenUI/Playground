@@ -1,62 +1,25 @@
-using Microsoft.AspNetCore.Mvc;
-using BenefitsAdmin.Models;
-using BenefitsAdmin.Services;
+using System;
 
-namespace BenefitsAdmin.Controllers
+namespace BenefitsAdmin.Models
 {
-    [ApiController]
-    [Route("api")]
-    public class PaymentController : ControllerBase
+    public class Payment
     {
-        private readonly PaymentService _paymentService;
+        public string PaymentId { get; set; }
+        public string ClaimId { get; set; }
+        public string ClaimantName { get; set; }
+        public decimal WeeklyBenefitAmount { get; set; }
+        public decimal TotalAuthorized { get; set; }
+        public string Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ProcessedAt { get; set; }
+        public string PaymentMethod { get; set; }
+    }
 
-        public PaymentController(PaymentService paymentService)
-        {
-            _paymentService = paymentService;
-        }
-
-        [HttpPost("authorize-payment")]
-        public IActionResult AuthorizePayment([FromBody] PaymentAuthorizationRequest request)
-        {
-            try
-            {
-                var payment = _paymentService.AuthorizePayment(request);
-                return Ok(new
-                {
-                    success = true,
-                    paymentId = payment.PaymentId,
-                    status = payment.Status,
-                    message = "Payment authorized successfully"
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
-        }
-
-        [HttpGet("payment/{paymentId}")]
-        public IActionResult GetPayment(string paymentId)
-        {
-            var payment = _paymentService.GetPayment(paymentId);
-            if (payment == null)
-                return NotFound(new { error = "Payment not found" });
-
-            return Ok(payment);
-        }
-
-        [HttpGet("payments/claim/{claimId}")]
-        public IActionResult GetPaymentsByClaimId(string claimId)
-        {
-            var payments = _paymentService.GetPaymentsByClaimId(claimId);
-            return Ok(payments);
-        }
-
-        [HttpGet("payments")]
-        public IActionResult GetAllPayments()
-        {
-            var payments = _paymentService.GetAllPayments();
-            return Ok(payments);
-        }
+    public class PaymentAuthorizationRequest
+    {
+        public string ClaimId { get; set; }
+        public string ClaimantName { get; set; }
+        public decimal WeeklyBenefitAmount { get; set; }
+        public decimal MaxBenefitAmount { get; set; }
     }
 }
