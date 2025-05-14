@@ -24,13 +24,13 @@ const ClaimForm = () => {
     e.preventDefault();
     
     try {
-      // Call Claims Processing through Kong API Gateway
+      // Use the API abstraction instead of direct axios call
       const response = await claimsAPI.submitClaim(formData);
       
       alert(`Claim submitted successfully! 
-        Claim ID: ${response.data.claimId}
-        Weekly Benefit: ${response.data.weeklyBenefitAmount}
-        Status: ${response.data.status}`);
+        Claim ID: ${response.claimId}
+        Weekly Benefit: ${response.weeklyBenefitAmount}
+        Status: ${response.status}`);
       
       // Reset form
       setFormData({
