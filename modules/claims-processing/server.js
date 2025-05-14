@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+const KONG_URL = process.env.KONG_URL || 'http://localhost:8000';
 
 app.use(express.json());
 
@@ -35,7 +36,7 @@ app.post('/api/new-claim', async (req, res) => {
     let wageData;
     try {
       const employerResponse = await axios.get(
-        `http://localhost:8000/employer/api/wages/${ssnLast4}/${employerName}`
+        `${KONG_URL}/employer/api/wages/${ssnLast4}/${employerName}`
       );
       wageData = employerResponse.data;
     } catch (error) {
@@ -56,7 +57,7 @@ app.post('/api/new-claim', async (req, res) => {
     let benefitCalculation;
     try {
       const rulesResponse = await axios.post(
-        'http://localhost:8000/rules/api/calculate-benefit',
+        `${KONG_URL}/rules/api/calculate-benefit`,
         { totalWages: wageData.totalWages }
       );
       benefitCalculation = rulesResponse.data;
@@ -89,7 +90,7 @@ app.post('/api/new-claim', async (req, res) => {
 
     // Step 3: Send to Benefits Administration
     try {
-      await axios.post('http://localhost:8000/benefits/api/authorize-payment', {
+      await axios.post(`${KONG_URL}/benefits/api/authorize-payment`, {
         claimId,
         claimantName,
         weeklyBenefitAmount: benefitCalculation.weeklyBenefitAmount,
