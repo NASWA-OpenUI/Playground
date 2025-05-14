@@ -25,15 +25,7 @@ const ClaimForm = () => {
     
     try {
       // Call Claims Processing through Kong API Gateway
-      const response = await axios.post(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/claims/api/new-claim`, {
-        claimantName: formData.fullName,
-        ssnLast4: formData.ssnLast4,
-        phone: formData.phone,
-        email: formData.email,
-        employerName: formData.lastEmployerName,
-        separationDate: formData.employmentEndDate,
-        separationReason: formData.separationReason
-      });
+      const response = await claimsAPI.submitClaim(formData);
       
       alert(`Claim submitted successfully! 
         Claim ID: ${response.data.claimId}
