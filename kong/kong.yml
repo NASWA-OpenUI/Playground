@@ -1,16 +1,7 @@
-# In kong/kong.yml, update each service to add CORS plugin
 _format_version: "3.0"
 
 services:
-  # Claimant Services API (React frontend calls)
-  - name: claimant-api
-    url: http://claimant-services:3000
-    routes:
-      - name: claimant-route
-        paths:
-          - /claimant
-
-  # Claims Processing Service - Add CORS plugin here
+  # Claims Processing Service
   - name: claims-processing-api
     url: http://claims-processing:3002
     routes:
@@ -22,25 +13,16 @@ services:
         config:
           origins:
             - "*"
+          credentials: false
           methods:
             - GET
             - POST
             - PUT
             - DELETE
             - OPTIONS
-          headers:
-            - Accept
-            - Accept-Version
-            - Content-Length
-            - Content-Type
-            - Date
-            - X-Auth-Token
-          exposed_headers:
-            - X-Auth-Token
-          credentials: true
-          max_age: 3600
+            - HEAD
+            - PATCH
 
-  # Apply same CORS config to other services...
   # Employer Services
   - name: employer-services-api
     url: http://employer-services:3003
@@ -53,12 +35,7 @@ services:
         config:
           origins:
             - "*"
-          methods:
-            - GET
-            - POST
-            - PUT
-            - DELETE
-            - OPTIONS
+          credentials: false
 
   # Benefits Administration
   - name: benefits-admin-api
@@ -72,12 +49,7 @@ services:
         config:
           origins:
             - "*"
-          methods:
-            - GET
-            - POST
-            - PUT
-            - DELETE
-            - OPTIONS
+          credentials: false
 
   # Business Rules Engine
   - name: business-rules-api
@@ -91,9 +63,4 @@ services:
         config:
           origins:
             - "*"
-          methods:
-            - GET
-            - POST
-            - PUT
-            - DELETE
-            - OPTIONS
+          credentials: false
