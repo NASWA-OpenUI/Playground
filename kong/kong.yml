@@ -1,3 +1,4 @@
+# In kong/kong.yml, update each service to add CORS plugin
 _format_version: "3.0"
 
 services:
@@ -9,14 +10,37 @@ services:
         paths:
           - /claimant
 
-  # Claims Processing Service
+  # Claims Processing Service - Add CORS plugin here
   - name: claims-processing-api
     url: http://claims-processing:3002
     routes:
       - name: claims-route
         paths:
           - /claims
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Content-Length
+            - Content-Type
+            - Date
+            - X-Auth-Token
+          exposed_headers:
+            - X-Auth-Token
+          credentials: true
+          max_age: 3600
 
+  # Apply same CORS config to other services...
   # Employer Services
   - name: employer-services-api
     url: http://employer-services:3003
@@ -24,14 +48,36 @@ services:
       - name: employer-route
         paths:
           - /employer
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
 
-  # Benefits Administration (.NET/C#)
+  # Benefits Administration
   - name: benefits-admin-api
     url: http://benefits-admin:3004
     routes:
       - name: benefits-route
         paths:
           - /benefits
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
 
   # Business Rules Engine
   - name: business-rules-api
@@ -40,3 +86,14 @@ services:
       - name: rules-route
         paths:
           - /rules
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
