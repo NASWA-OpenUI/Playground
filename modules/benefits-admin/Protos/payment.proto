@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+option csharp_namespace = "BenefitsAdmin.Protos";
+
+package payment;
+
+service PaymentService {
+  rpc AuthorizePayment (PaymentAuthorizationRequest) returns (PaymentAuthorizationResponse);
+  rpc GetPayment (GetPaymentRequest) returns (PaymentResponse);
+  rpc GetPaymentsByClaimId (GetPaymentsByClaimIdRequest) returns (PaymentListResponse);
+  rpc GetAllPayments (GetAllPaymentsRequest) returns (PaymentListResponse);
+}
+
+message PaymentAuthorizationRequest {
+  string claim_id = 1;
+  string claimant_name = 2;
+  double weekly_benefit_amount = 3;
+  double max_benefit_amount = 4;
+}
+
+message PaymentAuthorizationResponse {
+  bool success = 1;
+  string payment_id = 2;
+  string status = 3;
+  string message = 4;
+}
+
+message GetPaymentRequest {
+  string payment_id = 1;
+}
+
+message GetPaymentsByClaimIdRequest {
+  string claim_id = 1;
+}
+
+message GetAllPaymentsRequest {
+  // Empty message for getting all payments
+}
+
+message PaymentResponse {
+  string payment_id = 1;
+  string claim_id = 2;
+  string claimant_name = 3;
+  double weekly_benefit_amount = 4;
+  double total_authorized = 5;
+  string status = 6;
+  string created_at = 7;
+  string processed_at = 8;
+  string payment_method = 9;
+}
+
+message PaymentListResponse {
+  repeated PaymentResponse payments = 1;
+}
