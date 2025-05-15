@@ -17,7 +17,7 @@
   "@grpc/grpc-js": "^1.8.0",
   "@grpc/proto-loader": "^0.7.0",
   "graphql-request": "^6.1.0",
-  "soap": "^1.0.0",
+  "soap": "^1.0.0"
 }
   "devDependencies": {
     "nodemon": "^2.0.22"
