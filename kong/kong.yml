@@ -20,13 +20,16 @@ services:
           - POST
           - GET
 
-  # Business Rules Engine
-  - name: business-rules-api
+  # Business Rules Engine (SOAP)
+  - name: business-rules-soap
     url: http://business-rules:3001
     routes:
-      - name: rules-route
+      - name: rules-soap-route
         paths:
-          - /rules
+          - /rules/soap
+        methods:
+          - POST
+          - GET
 
   # Benefits Administration (gRPC)
   - name: benefits-admin-grpc
