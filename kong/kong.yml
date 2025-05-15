@@ -8,20 +8,6 @@ services:
       - name: claims-route
         paths:
           - /claims
-    plugins:
-      - name: cors
-        config:
-          origins:
-            - "*"
-          credentials: false
-          methods:
-            - GET
-            - POST
-            - PUT
-            - DELETE
-            - OPTIONS
-            - HEAD
-            - PATCH
 
   # Employer Services
   - name: employer-services-api
@@ -30,26 +16,6 @@ services:
       - name: employer-route
         paths:
           - /employer
-    plugins:
-      - name: cors
-        config:
-          origins:
-            - "*"
-          credentials: false
-
-  # Benefits Administration
-  - name: benefits-admin-api
-    url: http://benefits-admin:3004
-    routes:
-      - name: benefits-route
-        paths:
-          - /benefits
-    plugins:
-      - name: cors
-        config:
-          origins:
-            - "*"
-          credentials: false
 
   # Business Rules Engine
   - name: business-rules-api
@@ -58,9 +24,27 @@ services:
       - name: rules-route
         paths:
           - /rules
+
+  # Benefits Administration (gRPC)
+  - name: benefits-admin-grpc
+    url: http://benefits-admin:3004
+    protocol: grpc
+    routes:
+      - name: benefits-grpc-route
+        protocols:
+          - grpc
+        paths:
+          - /payment.PaymentService
     plugins:
-      - name: cors
+      - name: grpc-gateway
         config:
-          origins:
-            - "*"
-          credentials: false
+          proto: /kong/protos/payment.proto
+
+  # Benefits Administration (REST bridge for backward compatibility)
+  - name: benefits-admin-rest
+    url: http://benefits-admin:3004
+    protocol: http
+    routes:
+      - name: benefits-rest-route
+        paths:
+          - /benefits
