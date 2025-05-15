@@ -79,4 +79,69 @@ app.post('/api/new-claim', async (req, res) => {
         weeklyBenefitAmount: Math.min(Math.max(wageData.totalWages / 52 * 0.5, 50), 450),
         maxBenefitAmount: Math.min(Math.max(wageData.totalWages / 52 * 0.5, 50), 450) * 26,
         taxRateUsed: 0.5,
-        formula: 'totalWa
+        formula: 'totalWages / 52 * 0.5'
+      };
+    }
+
+    // Create claim record
+    const claim = {
+      claimId,
+      claimantName,
+      ssnLast4,
+      phone,
+      email,
+      employerName,
+      separationDate,
+      separationReason,
+      wageData,
+      benefitCalculation,
+      status: 'APPROVED',
+      createdAt: new Date().toISOString()
+    };
+
+    claims.set(claimId, claim);
+
+    // Step 3: Send to Benefits Administration (gRPC)
+    try {
+      await grpcClient.authorizePayment({
+        claim_id: claimId,
+        claimant_name: claimantName,
+        weekly_benefit_amount: benefitCalculation.weeklyBenefitAmount,
+        max_benefit_amount: benefitCalculation.maxBenefitAmount
+      });
+    } catch (error) {
+      console.error('Error authorizing payment:', error.message);
+    }
+
+    res.json({
+      claimId,
+      status: 'APPROVED',
+      weeklyBenefitAmount: benefitCalculation.weeklyBenefitAmount,
+      maxBenefitAmount: benefitCalculation.maxBenefitAmount,
+      message: 'Claim processed successfully'
+    });
+
+  } catch (error) {
+    console.error('Error processing claim:', error);
+    res.status(500).json({ error: 'Failed to process claim' });
+  }
+});
+
+// Get claim by ID
+app.get('/api/claim/:claimId', (req, res) => {
+  const claim = claims.get(req.params.claimId);
+  if (claim) {
+    res.json(claim);
+  } else {
+    res.status(404).json({ error: 'Claim not found' });
+  }
+});
+
+// Get all claims (for demo purposes)
+app.get('/api/claims', (req, res) => {
+  res.json(Array.from(claims.values()));
+});
+
+app.listen(PORT, () => {
+  console.log(`Claims Processing Service running on port ${PORT}`);
+});
