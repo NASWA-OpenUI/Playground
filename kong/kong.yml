@@ -9,13 +9,16 @@ services:
         paths:
           - /claims
 
-  # Employer Services
-  - name: employer-services-api
+# Employer Services (GraphQL)
+  - name: employer-services-graphql
     url: http://employer-services:3003
     routes:
-      - name: employer-route
+      - name: employer-graphql-route
         paths:
-          - /employer
+          - /employer/graphql
+        methods:
+          - POST
+          - GET
 
   # Business Rules Engine
   - name: business-rules-api
