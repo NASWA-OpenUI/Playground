@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions 
+    xmlns="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:tns="http://rules.business.ui/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://rules.business.ui/"
+    name="BusinessRulesService">
+
+    <types>
+        <xsd:schema targetNamespace="http://rules.business.ui/">
+            <xsd:element name="CalculateBenefitRequest">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="totalWages" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            
+            <xsd:element name="CalculateBenefitResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="weeklyBenefitAmount" type="xsd:double"/>
+                        <xsd:element name="maxBenefitAmount" type="xsd:double"/>
+                        <xsd:element name="taxRateUsed" type="xsd:double"/>
+                        <xsd:element name="formula" type="xsd:string"/>
+                        <xsd:element name="rulesVersion" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            
+            <xsd:element name="GetRulesRequest">
+                <xsd:complexType>
+                    <xsd:sequence/>
+                </xsd:complexType>
+            </xsd:element>
+            
+            <xsd:element name="GetRulesResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="rules" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            
+            <xsd:element name="UpdateTaxRateRequest">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="newRate" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+            
+            <xsd:element name="UpdateTaxRateResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="success" type="xsd:boolean"/>
+                        <xsd:element name="message" type="xsd:string"/>
+                        <xsd:element name="newRate" type="xsd:double"/>
+                        <xsd:element name="timestamp" type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+        </xsd:schema>
+    </types>
+    
+    <message name="CalculateBenefitRequest">
+        <part name="parameters" element="tns:CalculateBenefitRequest"/>
+    </message>
+    
+    <message name="CalculateBenefitResponse">
+        <part name="parameters" element="tns:CalculateBenefitResponse"/>
+    </message>
+    
+    <message name="GetRulesRequest">
+        <part name="parameters" element="tns:GetRulesRequest"/>
+    </message>
+    
+    <message name="GetRulesResponse">
+        <part name="parameters" element="tns:GetRulesResponse"/>
+    </message>
+    
+    <message name="UpdateTaxRateRequest">
+        <part name="parameters" element="tns:UpdateTaxRateRequest"/>
+    </message>
+    
+    <message name="UpdateTaxRateResponse">
+        <part name="parameters" element="tns:UpdateTaxRateResponse"/>
+    </message>
+    
+    <portType name="BusinessRulesPortType">
+        <operation name="CalculateBenefit">
+            <input message="tns:CalculateBenefitRequest"/>
+            <output message="tns:CalculateBenefitResponse"/>
+        </operation>
+        
+        <operation name="GetRules">
+            <input message="tns:GetRulesRequest"/>
+            <output message="tns:GetRulesResponse"/>
+        </operation>
+        
+        <operation name="UpdateTaxRate">
+            <input message="tns:UpdateTaxRateRequest"/>
+            <output message="tns:UpdateTaxRateResponse"/>
+        </operation>
+    </portType>
+    
+    <binding name="BusinessRulesBinding" type="tns:BusinessRulesPortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        
+        <operation name="CalculateBenefit">
+            <soap:operation soapAction="http://rules.business.ui/CalculateBenefit"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        
+        <operation name="GetRules">
+            <soap:operation soapAction="http://rules.business.ui/GetRules"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+        
+        <operation name="UpdateTaxRate">
+            <soap:operation soapAction="http://rules.business.ui/UpdateTaxRate"/>
+            <input>
+                <soap:body use="literal"/>
+            </input>
+            <output>
+                <soap:body use="literal"/>
+            </output>
+        </operation>
+    </binding>
+    
+    <service name="BusinessRulesService">
+        <port name="BusinessRulesPort" binding="tns:BusinessRulesBinding">
+            <soap:address location="http://localhost:3001/soap"/>
+        </port>
+    </service>
+</definitions>
