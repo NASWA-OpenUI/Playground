@@ -47,23 +47,20 @@ app.post('/api/new-claim', async (req, res) => {
     // Step 1: Get wage data from Employer Services
     let wageData;
     try {
-      const employerResponse = await axios.get(
-        `${KONG_URL}/employer/api/wages/${ssnLast4}/${employerName}`
-      );
-      wageData = employerResponse.data;
+      wageData = await graphqlClient.getWages(ssnLast4, employerName);
     } catch (error) {
       console.error('Error fetching wage data:', error.message);
-      // Use mock data if employer service is not available
-      wageData = {
-        quarters: [
-          { quarter: 'Q1', wages: 12000 },
-          { quarter: 'Q2', wages: 13000 },
-          { quarter: 'Q3', wages: 13500 },
-          { quarter: 'Q4', wages: 14000 }
-        ],
-        totalWages: 52500
-      };
-    }
+    // Use mock data fallback
+    wageData = {
+      quarters: [
+        { quarter: 'Q1', wages: 12000 },
+        { quarter: 'Q2', wages: 13000 },
+        { quarter: 'Q3', wages: 13500 },
+        { quarter: 'Q4', wages: 14000 }
+      ],
+      totalWages: 52500
+    };
+  }
 
     // Step 2: Calculate benefit amount using Business Rules Engine
     let benefitCalculation;
