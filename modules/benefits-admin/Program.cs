@@ -1,40 +1,29 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using BenefitsAdmin.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
-builder.Services.AddControllers();
-builder.Services.AddSingleton<PaymentService>();
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-});
-
-// Add gRPC services for demonstration
+// Add gRPC services
 builder.Services.AddGrpc();
+
+// Add CORS for gRPC-Web if needed
+builder.Services.AddCors(o => o.AddPolicy("AllowAll", builder =>
+{
+    builder.AllowAnyOrigin()
+           .AllowAnyMethod()
+           .AllowAnyHeader()
+           .WithExposedHeaders("Grpc-Status", "Grpc-Message", "Grpc-Encoding", "Grpc-Accept-Encoding");
+}));
 
 var app = builder.Build();
 
-// Configure pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-
-app.UseCors();
+// Configure the HTTP request pipeline
 app.UseRouting();
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-    endpoints.MapGet("/health", () => new { status = "Benefits Administration Service is running" });
-});
+app.UseCors();
+
+app.MapGrpcService<PaymentGrpcService>();
+app.MapGet("/", () => "Communication with gRPC endpoints must be made through a gRPC client.");
+
+// Health check endpoint
+app.MapGet("/health", () => new { status = "Benefits Administration gRPC Service is running" });
 
 app.Run();
