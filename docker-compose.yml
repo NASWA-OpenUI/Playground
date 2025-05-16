@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-# Update the Kong-related services in the main docker-compose.yml
-kong-database:
+  # API Gateway and related services
+  kong-database:
     image: postgres:15
     environment:
       POSTGRES_USER: kong
