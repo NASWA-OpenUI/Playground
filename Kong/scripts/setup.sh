@@ -72,4 +72,8 @@ curl -s -X POST http://kong:8001/plugins \
   --data config.credentials=true \
   --data config.max_age=3600
 
+# Verify routes were created
+echo "Verifying configuration..."
+curl -s http://kong:8001/routes | jq -r '.data[] | .name + ": " + (.paths | join(", "))'
+
 echo "Kong setup completed successfully!"
