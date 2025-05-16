@@ -21,8 +21,7 @@ kong-database:
   kong-migration:
     image: kong:3.4
     depends_on:
-      kong-database:
-        condition: service_healthy
+      - kong-database
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
@@ -38,8 +37,8 @@ kong-database:
       context: ./Kong
       dockerfile: Dockerfile
     depends_on:
-      kong-migration:
-        condition: service_completed_successfully
+      - kong-database
+      - kong-migration
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
@@ -71,8 +70,7 @@ kong-database:
       - ./Kong/scripts:/scripts
     command: ["sh", "/scripts/setup.sh"]
     depends_on:
-      kong:
-        condition: service_healthy
+      - kong
     networks:
       - ui-system-network
 
