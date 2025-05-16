@@ -1,21 +1,18 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
-WORKDIR /app
-EXPOSE 3004
-# gRPC uses HTTP/2
-ENV ASPNETCORE_URLS=http://+:3004
-ENV ASPNETCORE_PROTOCOLS=Http2
-
+# Modules/benefits-admin/Dockerfile
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["BenefitsAdmin.csproj", "."]
+
+# Copy csproj and restore dependencies
+COPY *.csproj ./
 RUN dotnet restore
-COPY . .
-RUN dotnet build -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish
+# Copy everything else and build
+COPY . ./
+RUN dotnet publish -c Release -o /app
 
-FROM base AS final
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "BenefitsAdmin.dll"]
+COPY --from=build /app .
+EXPOSE 3004
+ENTRYPOINT ["dotnet", "BenefitsAdministration.dll"]
