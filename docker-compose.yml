@@ -15,8 +15,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - ui-system-network
 
   kong-migration:
     image: kong:3.4
@@ -29,8 +27,6 @@ services:
       KONG_PG_PASSWORD: kongpass
     command: bash -c "kong migrations bootstrap && kong migrations up"
     restart: on-failure
-    networks:
-      - ui-system-network
 
   kong:
     build:
@@ -61,8 +57,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
-    networks:
-      - ui-system-network
 
   kong-setup:
     image: curlimages/curl:latest
@@ -71,8 +65,6 @@ services:
     command: ["sh", "/scripts/setup.sh"]
     depends_on:
       - kong
-    networks:
-      - ui-system-network
 
   # Module Services
   claimant-services:
@@ -84,8 +76,6 @@ services:
       - "3000:3000"
     environment:
       - API_GATEWAY_URL=http://kong:8000
-    networks:
-      - ui-system-network
 
   claims-processing:
     build: ./Modules/claims-processing
@@ -97,8 +87,6 @@ services:
     environment:
       - PORT=3002
       - API_GATEWAY_URL=http://kong:8000
-    networks:
-      - ui-system-network
 
   employer-services:
     build: ./Modules/employer-services
@@ -109,8 +97,6 @@ services:
     environment:
       - PORT=3003
       - API_GATEWAY_URL=http://kong:8000
-    networks:
-      - ui-system-network
 
   benefits-admin:
     build: ./Modules/benefits-admin
@@ -119,8 +105,6 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:3004
       - API_GATEWAY_URL=http://kong:8000
-    networks:
-      - ui-system-network
 
   # Business Rules Engine
   business-rules:
@@ -132,12 +116,6 @@ services:
       - /app/node_modules
     environment:
       - PORT=3001
-    networks:
-      - ui-system-network
-
-networks:
-  ui-system-network:
-    driver: bridge
 
 volumes:
   kong_data:
