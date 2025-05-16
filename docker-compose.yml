@@ -1,24 +1,107 @@
 version: '3.8'
 
 services:
-  # Kong API Gateway
-  kong:
-    image: kong:alpine
+  # API Gateway
+  kong-database:
+    image: postgres:15
     environment:
-      KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kongpass
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ui-system-network
+
+  kong-migration:
+    image: kong:3.4
+    depends_on:
+      - kong-database
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kongpass
+    command: "kong migrations bootstrap"
+    restart: on-failure
+    networks:
+      - ui-system-network
+
+  kong:
+    image: kong:3.4
+    depends_on:
+      - kong-database
+      - kong-migration
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kongpass
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_GUI_URL: http://localhost:8002
     ports:
-      - "8000:8000"
-      - "8001:8001"
-    volumes:
-      - ./kong/kong.yml:/kong/kong.yml
+      - "8000:8000" # Kong proxy port
+      - "8001:8001" # Kong admin API
+      - "8002:8002" # Kong Manager (admin UI)
     networks:
-      - ui-network
+      - ui-system-network
+
+  # Module Services
+  claimant-services:
+    build: ./Modules/claimant-services
+    volumes:
+      - ./Modules/claimant-services:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - API_GATEWAY_URL=http://kong:8000
+    networks:
+      - ui-system-network
+
+  claims-processing:
+    build: ./Modules/claims-processing
+    volumes:
+      - ./Modules/claims-processing:/app
+      - /app/node_modules
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - API_GATEWAY_URL=http://kong:8000
+    networks:
+      - ui-system-network
+
+  employer-services:
+    build: ./Modules/employer-services
+    volumes:
+      - ./Modules/employer-services:/app
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - API_GATEWAY_URL=http://kong:8000
+    networks:
+      - ui-system-network
+
+  benefits-admin:
+    build: ./Modules/benefits-admin
+    ports:
+      - "3004:3004"
+    environment:
+      - ASPNETCORE_URLS=http://+:3004
+      - API_GATEWAY_URL=http://kong:8000
+    networks:
+      - ui-system-network
 
   # Business Rules Engine
   business-rules:
@@ -26,56 +109,16 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./business-rules/rules.json:/app/rules.json
+      - ./business-rules:/app
+      - /app/node_modules
     environment:
-      - KONG_URL=https://scaling-space-chainsaw-q74644jjrrgrh4q54-8000.app.github.dev
+      - PORT=3001
     networks:
-      - ui-network
-
-  # Claimant Services (React)
-  claimant-services:
-    build: ./modules/claimant-services
-    ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_API_URL=https://scaling-space-chainsaw-q74644jjrrgrh4q54-8000.app.github.dev
-    networks:
-      - ui-network
-
-  # Claims Processing (Node.js)
-  claims-processing:
-    build: ./modules/claims-processing
-    ports:
-      - "3002:3002"
-    environment:
-      - PORT=3002
-      - KONG_URL=https://scaling-space-chainsaw-q74644jjrrgrh4q54-8000.app.github.dev
-      - RULES_ENGINE_URL=http://business-rules:3001
-    networks:
-      - ui-network
-
-  # Employer Services (Python)
-  employer-services:
-    build: ./modules/employer-services
-    ports:
-      - "3003:3003"
-    environment:
-      - PORT=3003
-      - KONG_URL=https://scaling-space-chainsaw-q74644jjrrgrh4q54-8000.app.github.dev
-    networks:
-      - ui-network
-
-  # Benefits Administration (C#)
-  benefits-admin:
-    build: ./modules/benefits-admin
-    ports:
-      - "3004:3004"
-    environment:
-      - PORT=3004
-      - KONG_URL=https://scaling-space-chainsaw-q74644jjrrgrh4q54-8000.app.github.dev
-    networks:
-      - ui-network
+      - ui-system-network
 
 networks:
-  ui-network:
+  ui-system-network:
     driver: bridge
+
+volumes:
+  kong_data:
