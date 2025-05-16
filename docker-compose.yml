@@ -1,40 +1,20 @@
 version: '3.8'
 
 services:
-  kong:
-    image: kong:3.4  # Using the official image directly instead of building
-    depends_on:
-      - kong-database
-    environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kongpass
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
-      KONG_PROXY_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_ERROR_LOG: /dev/stderr
-      KONG_ADMIN_LISTEN: 0.0.0.0:8001
-      KONG_ADMIN_GUI_URL: http://localhost:8002
+  # Traefik API Gateway
+  traefik:
+    image: traefik:v2.9
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:8000"
     ports:
-      - "8000:8000"
-      - "8001:8001"
-      - "8002:8002"
-    restart: always
-
-  kong-database:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: kong
-      POSTGRES_DB: kong
-      POSTGRES_PASSWORD: kongpass
+      - "8000:8000"  # API Gateway
+      - "8080:8080"  # Traefik Dashboard
     volumes:
-      - kong_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "kong"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
 
   # Module Services
   claimant-services:
@@ -45,7 +25,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - API_GATEWAY_URL=http://kong:8000
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+    restart: always
 
   claims-processing:
     build: ./Modules/claims-processing
@@ -56,7 +37,12 @@ services:
       - "3002:3002"
     environment:
       - PORT=3002
-      - API_GATEWAY_URL=http://kong:8000
+      - API_GATEWAY_URL=http://traefik:8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.claims.rule=PathPrefix(`/api/claims`)"
+      - "traefik.http.services.claims.loadbalancer.server.port=3002"
+    restart: always
 
   employer-services:
     build: ./Modules/employer-services
@@ -66,7 +52,12 @@ services:
       - "3003:3003"
     environment:
       - PORT=3003
-      - API_GATEWAY_URL=http://kong:8000
+      - API_GATEWAY_URL=http://traefik:8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.employers.rule=PathPrefix(`/graphql`)"
+      - "traefik.http.services.employers.loadbalancer.server.port=3003"
+    restart: always
 
   benefits-admin:
     build: ./Modules/benefits-admin
@@ -74,9 +65,13 @@ services:
       - "3004:3004"
     environment:
       - ASPNETCORE_URLS=http://+:3004
-      - API_GATEWAY_URL=http://kong:8000
+      - API_GATEWAY_URL=http://traefik:8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.benefits.rule=PathPrefix(`/api/benefits`)"
+      - "traefik.http.services.benefits.loadbalancer.server.port=3004"
+    restart: always
 
-  # Business Rules Engine
   business-rules:
     build: ./business-rules
     ports:
@@ -86,6 +81,8 @@ services:
       - /app/node_modules
     environment:
       - PORT=3001
-
-volumes:
-  kong_data:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rules.rule=PathPrefix(`/api/rules`)"
+      - "traefik.http.services.rules.loadbalancer.server.port=3001"
+    restart: always
