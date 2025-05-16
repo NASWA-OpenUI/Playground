@@ -1,7 +1,7 @@
 // Modules/claimant-services/src/services/api.js
 import axios from 'axios';
 
-// Get the API base URL from environment variables, or default to the Kong gateway
+// Get the API base URL from environment variables, or default to the Traefik gateway
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 const CLAIMS_API = `${API_BASE_URL}/api/claims`;
 
