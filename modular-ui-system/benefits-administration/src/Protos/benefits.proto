@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+option csharp_namespace = "BenefitsAdmin.Protos";
+
+package benefits;
+
+// Benefits Administration service definition
+service BenefitsService {
+  // Process a payment
+  rpc ProcessPayment (PaymentRequest) returns (PaymentResponse);
+  
+  // Get payment history for a claim
+  rpc GetPaymentHistory (PaymentHistoryRequest) returns (PaymentHistoryResponse);
+  
+  // Update tax rate for benefit calculations
+  rpc UpdateTaxRate (TaxRateRequest) returns (TaxRateResponse);
+  
+  // Get current tax rate
+  rpc GetTaxRate (TaxRateInfoRequest) returns (TaxRateInfoResponse);
+}
+
+// Payment request message
+message PaymentRequest {
+  string claim_id = 1;
+  double amount = 2;
+  string payment_type = 3;  // "weekly", "adjustment", etc.
+}
+
+// Payment response message
+message PaymentResponse {
+  string payment_id = 1;
+  string status = 2;
+  double amount = 3;
+  string date = 4;
+  string method = 5;
+}
+
+// Payment history request message
+message PaymentHistoryRequest {
+  string claim_id = 1;
+}
+
+// Single payment record
+message PaymentRecord {
+  string payment_id = 1;
+  string claim_id = 2;
+  double amount = 3;
+  string date = 4;
+  string status = 5;
+  string method = 6;
+}
+
+// Payment history response message
+message PaymentHistoryResponse {
+  repeated PaymentRecord payments = 1;
+  double total_paid = 2;
+}
+
+// Tax rate update request
+message TaxRateRequest {
+  double new_rate = 1;
+}
+
+// Tax rate update response
+message TaxRateResponse {
+  bool success = 1;
+  string message = 2;
+  double current_rate = 3;
+}
+
+// Tax rate info request
+message TaxRateInfoRequest {
+  // Empty request
+}
+
+// Tax rate info response
+message TaxRateInfoResponse {
+  double current_rate = 1;
+  string last_updated = 2;
+}

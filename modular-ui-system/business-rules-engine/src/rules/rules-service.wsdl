@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions 
+  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" 
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+  xmlns:tns="http://uimod.dol.gov/rules" 
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+  name="RulesService"
+  targetNamespace="http://uimod.dol.gov/rules">
+
+  <wsdl:types>
+    <xsd:schema targetNamespace="http://uimod.dol.gov/rules">
+      <!-- Calculate Benefit Request -->
+      <xsd:element name="CalculateBenefitRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="claimId" type="xsd:string"/>
+            <xsd:element name="weeklyWage" type="xsd:decimal"/>
+            <xsd:element name="taxRate" type="xsd:decimal"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Calculate Benefit Response -->
+      <xsd:element name="CalculateBenefitResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="weeklyBenefit" type="xsd:decimal"/>
+            <xsd:element name="maxBenefit" type="xsd:decimal"/>
+            <xsd:element name="taxRate" type="xsd:decimal"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Determine Eligibility Request -->
+      <xsd:element name="DetermineEligibilityRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="claimId" type="xsd:string"/>
+            <xsd:element name="weeksWorked" type="xsd:integer"/>
+            <xsd:element name="totalEarnings" type="xsd:decimal"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Determine Eligibility Response -->
+      <xsd:element name="DetermineEligibilityResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="eligible" type="xsd:boolean"/>
+            <xsd:element name="reason" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Update Tax Rate Request -->
+      <xsd:element name="UpdateTaxRateRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="newRate" type="xsd:decimal"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Update Tax Rate Response -->
+      <xsd:element name="UpdateTaxRateResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="success" type="xsd:boolean"/>
+            <xsd:element name="message" type="xsd:string"/>
+            <xsd:element name="currentRate" type="xsd:decimal"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Get Current Tax Rate Request -->
+      <xsd:element name="GetCurrentTaxRateRequest">
+        <xsd:complexType>
+          <xsd:sequence/>
+        </xsd:complexType>
+      </xsd:element>
+      
+      <!-- Get Current Tax Rate Response -->
+      <xsd:element name="GetCurrentTaxRateResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="taxRate" type="xsd:decimal"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </wsdl:types>
+
+  <!-- Messages -->
+  <wsdl:message name="CalculateBenefitInput">
+    <wsdl:part name="parameters" element="tns:CalculateBenefitRequest"/>
+  </wsdl:message>
+  <wsdl:message name="CalculateBenefitOutput">
+    <wsdl:part name="parameters" element="tns:CalculateBenefitResponse"/>
+  </wsdl:message>
+  
+  <wsdl:message name="DetermineEligibilityInput">
+    <wsdl:part name="parameters" element="tns:DetermineEligibilityRequest"/>
+  </wsdl:message>
+  <wsdl:message name="DetermineEligibilityOutput">
+    <wsdl:part name="parameters" element="tns:DetermineEligibilityResponse"/>
+  </wsdl:message>
+  
+  <wsdl:message name="UpdateTaxRateInput">
+    <wsdl:part name="parameters" element="tns:UpdateTaxRateRequest"/>
+  </wsdl:message>
+  <wsdl:message name="UpdateTaxRateOutput">
+    <wsdl:part name="parameters" element="tns:UpdateTaxRateResponse"/>
+  </wsdl:message>
+  
+  <wsdl:message name="GetCurrentTaxRateInput">
+    <wsdl:part name="parameters" element="tns:GetCurrentTaxRateRequest"/>
+  </wsdl:message>
+  <wsdl:message name="GetCurrentTaxRateOutput">
+    <wsdl:part name="parameters" element="tns:GetCurrentTaxRateResponse"/>
+  </wsdl:message>
+
+  <!-- Port Type -->
+  <wsdl:portType name="RulesServicePortType">
+    <wsdl:operation name="calculateBenefit">
+      <wsdl:input message="tns:CalculateBenefitInput"/>
+      <wsdl:output message="tns:CalculateBenefitOutput"/>
+    </wsdl:operation>
+    
+    <wsdl:operation name="determineEligibility">
+      <wsdl:input message="tns:DetermineEligibilityInput"/>
+      <wsdl:output message="tns:DetermineEligibilityOutput"/>
+    </wsdl:operation>
+    
+    <wsdl:operation name="updateTaxRate">
+      <wsdl:input message="tns:UpdateTaxRateInput"/>
+      <wsdl:output message="tns:UpdateTaxRateOutput"/>
+    </wsdl:operation>
+    
+    <wsdl:operation name="getCurrentTaxRate">
+      <wsdl:input message="tns:GetCurrentTaxRateInput"/>
+      <wsdl:output message="tns:GetCurrentTaxRateOutput"/>
+    </wsdl:operation>
+  </wsdl:portType>
+
+  <!-- Binding -->
+  <wsdl:binding name="RulesServiceSoap" type="tns:RulesServicePortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    
+    <wsdl:operation name="calculateBenefit">
+      <soap:operation soapAction="http://uimod.dol.gov/rules/calculateBenefit"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    
+    <wsdl:operation name="determineEligibility">
+      <soap:operation soapAction="http://uimod.dol.gov/rules/determineEligibility"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    
+    <wsdl:operation name="updateTaxRate">
+      <soap:operation soapAction="http://uimod.dol.gov/rules/updateTaxRate"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    
+    <wsdl:operation name="getCurrentTaxRate">
+      <soap:operation soapAction="http://uimod.dol.gov/rules/getCurrentTaxRate"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+
+  <!-- Service -->
+  <wsdl:service name="RulesService">
+    <wsdl:port binding="tns:RulesServiceSoap" name="RulesServiceSoap">
+      <soap:address location="http://localhost:3001/soap/rules"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

@@ -1,105 +1,110 @@
 version: '3.8'
 
 services:
-  # Traefik API Gateway
-  traefik:
-    image: traefik:v2.9
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:8000"
-      - "--providers.docker.network=app-network"
-    ports:
-      - "8000:8000"  # API Gateway
-      - "8080:8080"  # Traefik Dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - app-network
-    restart: always
-
-  # Module Services
-  claimant-services:
-    build: ./Modules/claimant-services
-    volumes:
-      - ./Modules/claimant-services:/app
-      - /app/node_modules
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_BASE_URL=http://localhost:8000
-    networks:
-      - app-network
-    restart: always
-
-  claims-processing:
-    build: ./Modules/claims-processing
+      - PORT=3000
+      - NODE_ENV=development
     volumes:
-      - ./Modules/claims-processing:/app
+      - ./api-gateway:/app
       - /app/node_modules
+    depends_on:
+      - business-rules-engine
+      - claims-processing
+      - employer-services
+      - benefits-administration
+    networks:
+      - ui-modernization
+
+  # Business Rules Engine
+  business-rules-engine:
+    build:
+      context: ./business-rules-engine
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+    volumes:
+      - ./business-rules-engine:/app
+      - /app/node_modules
+    networks:
+      - ui-modernization
+
+  # Claims Processing
+  claims-processing:
+    build:
+      context: ./claims-processing
     ports:
       - "3002:3002"
     environment:
       - PORT=3002
-      - API_GATEWAY_URL=http://traefik:8000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.claims.rule=PathPrefix(`/api/claims`)"
-      - "traefik.http.services.claims.loadbalancer.server.port=3002"
-    networks:
-      - app-network
-    restart: always
-
-  employer-services:
-    build: ./Modules/employer-services
+      - NODE_ENV=development
+      - API_GATEWAY_URL=http://api-gateway:3000
     volumes:
-      - ./Modules/employer-services:/app
+      - ./claims-processing:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+    networks:
+      - ui-modernization
+
+  # Employer Services
+  employer-services:
+    build:
+      context: ./employer-services
     ports:
       - "3003:3003"
     environment:
-      - PORT=3003
-      - API_GATEWAY_URL=http://traefik:8000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.employers.rule=PathPrefix(`/graphql`)"
-      - "traefik.http.services.employers.loadbalancer.server.port=3003"
-    networks:
-      - app-network
-    restart: always
-
-  benefits-admin:
-    build: ./Modules/benefits-admin
-    ports:
-      - "3004:3004"
-    environment:
-      - ASPNETCORE_URLS=http://+:3004
-      - API_GATEWAY_URL=http://traefik:8000
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.benefits.rule=PathPrefix(`/api/benefits`)"
-      - "traefik.http.services.benefits.loadbalancer.server.port=3004"
-    networks:
-      - app-network
-    restart: always
-
-  business-rules:
-    build: ./business-rules
-    ports:
-      - "3001:3001"
+      - FLASK_APP=app.py
+      - FLASK_ENV=development
+      - API_GATEWAY_URL=http://api-gateway:3000
     volumes:
-      - ./business-rules:/app
-      - /app/node_modules
-    environment:
-      - PORT=3001
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.rules.rule=PathPrefix(`/api/rules`)"
-      - "traefik.http.services.rules.loadbalancer.server.port=3001"
+      - ./employer-services:/app
+    depends_on:
+      - api-gateway
     networks:
-      - app-network
-    restart: always
+      - ui-modernization
+
+  # Benefits Administration
+  benefits-administration:
+    build:
+      context: ./benefits-administration
+    ports:
+      - "3004:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ApiGatewayUrl=http://api-gateway:3000
+    volumes:
+      - ./benefits-administration:/app
+      - /app/obj
+      - /app/bin
+    depends_on:
+      - api-gateway
+    networks:
+      - ui-modernization
+
+  # Claimant Services Frontend
+  claimant-services:
+    build:
+      context: ./claimant-services
+    ports:
+      - "3005:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3000/api
+    volumes:
+      - ./claimant-services:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+    networks:
+      - ui-modernization
 
 networks:
-  app-network:
+  ui-modernization:
     driver: bridge
