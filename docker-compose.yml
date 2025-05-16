@@ -2,21 +2,22 @@ version: '3.8'
 
 services:
   # Traefik API Gateway
-  traefik:
-    image: traefik:v2.9
-    command:
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:8000"
-    ports:
-      - "8000:8000"  # API Gateway
-      - "8080:8080"  # Traefik Dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - app-network
-    restart: always
+traefik:
+  image: traefik:v2.9
+  command:
+    - "--api.insecure=true"
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.web.address=:8000"
+    - "--providers.docker.network=app-network"
+  ports:
+    - "8000:8000"  # API Gateway
+    - "8080:8080"  # Traefik Dashboard
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+  networks:
+    - app-network
+  restart: always
 
   # Module Services
   claimant-services:
