@@ -1,0 +1,722 @@
+<script>
+    // DOM Elements
+    const form = document.getElementById('claim-form');
+    const steps = document.querySelectorAll('.form-step');
+    const stepIndicators = document.querySelectorAll('.stepper .step');
+    const nextButtons = document.querySelectorAll('.next-step');
+    const prevButtons = document.querySelectorAll('.prev-step');
+    const addEmployerBtn = document.getElementById('add-employer-btn');
+    const additionalEmployers = document.getElementById('additional-employers');
+    const otherReasonGroup = document.getElementById('other-reason-group');
+    const separationReasonRadios = document.querySelectorAll('input[name="separationReason"]');
+    const reviewContent = document.getElementById('review-content');
+    const submitBtn = document.getElementById('submit-btn');
+    const alertBox = document.getElementById('alert-box');
+    
+    // Current step
+    let currentStep = 1;
+    
+    // Event listeners
+    nextButtons.forEach(button => {
+      button.addEventListener('click', goToNextStep);
+    });
+    
+    prevButtons.forEach(button => {
+      button.addEventListener('click', goToPrevStep);
+    });
+    
+    addEmployerBtn.addEventListener('click', addEmployer);
+    
+    separationReasonRadios.forEach(radio => {
+      radio.addEventListener('change', toggleOtherReason);
+    });
+    
+    form.addEventListener('submit', submitForm);
+    
+    // Functions
+    function goToNextStep() {
+      // Validate current step
+      if (!validateStep(currentStep)) {
+        showAlert('Please fill in all required fields.', 'error');
+        return;
+      }
+      
+      // Hide current step
+      hideStep(currentStep);
+      
+      // Mark current step as completed
+      markStepCompleted(currentStep);
+      
+      // Show next step
+      currentStep++;
+      showStep(currentStep);
+      
+      // If going to review step, populate review content
+      if (currentStep === 4) {
+        populateReview();
+      }
+    }
+    
+    function goToPrevStep() {
+      // Hide current step
+      hideStep(currentStep);
+      
+      // Show previous step
+      currentStep--;
+      showStep(currentStep);
+    }
+    
+    function showStep(step) {
+      // Show the step content
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      stepContent.classList.add('active');
+      
+      // Update the step indicator
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.add('active');
+    }
+    
+    function hideStep(step) {
+      // Hide the step content
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      stepContent.classList.remove('active');
+      
+      // Update the step indicator
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.remove('active');
+    }
+    
+    function markStepCompleted(step) {
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.add('completed');
+    }
+    
+    function validateStep(step) {
+      // Get all required inputs in the current step
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      const requiredInputs = stepContent.querySelectorAll('[required]');
+      
+      // Check if all required inputs have values
+      for (const input of requiredInputs) {
+        if (!input.value.trim()) {
+          return false;
+        }
+      }
+      
+      return true;
+    }
+    
+    function addEmployer() {
+      const employerCount = document.querySelectorAll('.employment-record').length;
+      const employerIndex = employerCount + 1;
+      
+      const employerHtml = `
+        <div class="employment-record">
+          <h3>Employer #${employerIndex}</h3>
+          <div class="form-group">
+            <label for="employerName${employerIndex}">Employer Name</label>
+            <input type="text" id="employerName${employerIndex}" name="employerName${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="employerId${employerIndex}">Employer ID (if known)</label>
+            <input type="text" id="employerId${employerIndex}" name="employerId${employerIndex}">
+          </div>
+          <div class="form-group">
+            <label for="position${employerIndex}">Position/Title</label>
+            <input type="text" id="position${employerIndex}" name="position${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="startDate${employerIndex}">Start Date</label>
+            <input type="date" id="startDate${employerIndex}" name="startDate${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="endDate${employerIndex}">End Date</label>
+            <input type="date" id="endDate${employerIndex}" name="endDate${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="wages${employerIndex}">Monthly Wages ($)</label>
+            <input type="number" id="wages${employerIndex}" name="wages${employerIndex}" required>
+          </div>
+          <button type="button" class="btn btn-secondary" onclick="removeEmployer(this)">Remove</button>
+        </div>
+      `;
+      
+      additionalEmployers.insertAdjacentHTML('beforeend', employerHtml);
+    }
+    
+    // Make removeEmployer function available globally for the onclick handlers
+    window.removeEmployer = function(button) {
+      const employerRecord = button.parentNode;
+      employerRecord.remove();
+    };
+    
+    function toggleOtherReason() {
+      const selectedReason = document.querySelector('input[name="separationReason"]:checked').value;
+      
+      if (selectedReason === 'Other') {
+        otherReasonGroup.style.display = 'block';
+      } else {
+        otherReasonGroup.style.display = 'none';
+      }
+    }
+    
+    function populateReview() {
+      // Personal Information
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const ssn = document.getElementById('ssn').value;
+      const street = document.getElementById('street').value;
+      const city = document.getElementById('city').value;
+      const state = document.getElementById('state').value;
+      const zip = document.getElementById('zip').value;
+      
+      // Employment History
+      const employerName = document.getElementById('employerName').value;
+      const employerId = document.getElementById('employerId').value;
+      const position = document.getElementById('position').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const wages = document.getElementById('wages').value;
+      
+      // Separation Reason
+      const separationReason = document.querySelector('input[name="separationReason"]:checked').value;
+      const otherReason = document.getElementById('otherReason').value;
+      
+      // Build review HTML
+      let reviewHtml = `
+        <div style="margin-bottom: 1.5rem;">
+          <h3>Personal Information</h3>
+          <p><strong>Name:</strong> ${fullName}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>SSN:</strong> ${ssn}</p>
+          <p><strong>Address:</strong> ${street}, ${city}, ${state} ${zip}</p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h3>Employment History</h3>
+          <div style="margin-bottom: 1rem;">
+            <p><strong>Employer:</strong> ${employerName}</p>
+            <p><strong>Employer ID:</strong> ${employerId}</p>
+            <p><strong>Position:</strong> ${position}</p>
+            <p><strong>Employment Period:</strong> ${formatDate(startDate)} to ${formatDate(endDate)}</p>
+            <p><strong>Monthly Wages:</strong> $${wages}</p>
+          </div>
+      `;
+      
+      // Add additional employers
+      const additionalEmployerRecords = additionalEmployers.querySelectorAll('.employment-record');
+      additionalEmployerRecords.forEach((record, index) => {
+        const empIndex = index + 2;
+        const empName = record.querySelector(`#employerName${empIndex}`).value;
+        const empId = record.querySelector(`#employerId${empIndex}`).value;
+        const empPosition = record.querySelector(`#position${empIndex}`).value;
+        const empStartDate = record.querySelector(`#startDate${empIndex}`).value;
+        const empEndDate = record.querySelector(`#endDate${empIndex}`).value;
+        const empWages = record.querySelector(`#wages${empIndex}`).value;
+        
+        reviewHtml += `
+          <div style="margin-bottom: 1rem;">
+            <p><strong>Employer:</strong> ${empName}</p>
+            <p><strong>Employer ID:</strong> ${empId}</p>
+            <p><strong>Position:</strong> ${empPosition}</p>
+            <p><strong>Employment Period:</strong> ${formatDate(empStartDate)} to ${formatDate(empEndDate)}</p>
+            <p><strong>Monthly Wages:</strong> $${empWages}</p>
+          </div>
+        `;
+      });
+      
+      reviewHtml += `
+        </div>
+        
+        <div>
+          <h3>Separation Reason</h3>
+          <p><strong>Reason:</strong> ${separationReason}</p>
+      `;
+      
+      if (separationReason === 'Other' && otherReason) {
+        reviewHtml += `<p><strong>Explanation:</strong> ${otherReason}</p>`;
+      }
+      
+      reviewHtml += `</div>`;
+      
+      // Set review content
+      reviewContent.innerHTML = reviewHtml;
+    }
+    
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    
+    async function submitForm(e) {
+      e.preventDefault();
+      
+      // Check if certification checkbox is checked
+      const certifyCheckbox = document.getElementById('certify');
+      if (!certifyCheckbox.checked) {
+        showAlert('Please certify that the information is accurate.', 'error');
+        return;
+      }
+      
+      // Disable submit button and show loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      
+      try {
+        // Collect claim data
+        const claimData = {
+          userId: "USER123", // Hardcoded for demo
+          separationReason: document.querySelector('input[name="separationReason"]:checked').value,
+          employmentHistory: [
+            {
+              employerId: document.getElementById('employerId').value,
+              employerName: document.getElementById('employerName').value,
+              startDate: document.getElementById('startDate').value,
+              endDate: document.getElementById('endDate').value,
+              wages: parseFloat(document.getElementById('wages').value),
+              position: document.getElementById('position').value
+            }
+          ]
+        };
+        
+        // Add additional employers
+        const additionalEmployerRecords = additionalEmployers.querySelectorAll('.employment-record');
+        additionalEmployerRecords.forEach((record, index) => {
+          const empIndex = index + 2;
+          claimData.employmentHistory.push({
+            employerId: record.querySelector(`#employerId${empIndex}`).value,
+            employerName: record.querySelector(`#employerName${empIndex}`).value,
+            startDate: record.querySelector(`#startDate${empIndex}`).value,
+            endDate: record.querySelector(`#endDate${empIndex}`).value,
+            wages: parseFloat(record.querySelector(`#wages${empIndex}`).value),
+            position: record.querySelector(`#position${empIndex}`).value
+          });
+        });
+        
+        // Prepare GraphQL mutation
+        const mutation = {
+          query: `
+            mutation SubmitClaim($input: ClaimInput!) {
+              submitClaim(input: $input) {
+                claim {
+                  claimId
+                  status
+                }
+                success
+                message
+              }
+            }
+          `,
+          variables: {
+            input: claimData
+          }
+        };
+        
+        // For demo purposes, we'll simulate a successful submission
+        console.log('Simulating successful submission for demo');
+        console.log('Claim data:', claimData);
+        
+        // Short delay to simulate processing
+        setTimeout(() => {
+          // Show success step
+          hideStep(currentStep);
+          currentStep = 5;
+          showStep(currentStep);
+          
+          // Generate a random claim reference number
+          const claimReference = document.getElementById('claim-reference');
+          claimReference.textContent = 'CL-' + Math.floor(10000 + Math.random() * 90000);
+        }, 1500);
+        
+      } catch (error) {
+        console.log('Error submitting claim:', error);
+        showAlert('An error occurred while submitting your claim. Please try again.', 'error');
+        
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Claim';
+      }
+    }
+    
+    function showAlert(message, type) {
+      alertBox.textContent = message;
+      alertBox.className = 'alert';
+      
+      if (type === 'success') {
+        alertBox.classList.add('success');
+      }
+      
+      alertBox.style.display = 'block';
+      
+      // Hide after 5 seconds
+      setTimeout(() => {
+        alertBox.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
+<script>
+    // DOM Elements
+    const form = document.getElementById('claim-form');
+    const steps = document.querySelectorAll('.form-step');
+    const stepIndicators = document.querySelectorAll('.stepper .step');
+    const nextButtons = document.querySelectorAll('.next-step');
+    const prevButtons = document.querySelectorAll('.prev-step');
+    const addEmployerBtn = document.getElementById('add-employer-btn');
+    const additionalEmployers = document.getElementById('additional-employers');
+    const otherReasonGroup = document.getElementById('other-reason-group');
+    const separationReasonRadios = document.querySelectorAll('input[name="separationReason"]');
+    const reviewContent = document.getElementById('review-content');
+    const submitBtn = document.getElementById('submit-btn');
+    const alertBox = document.getElementById('alert-box');
+    
+    // Current step
+    let currentStep = 1;
+    
+    // Event listeners
+    nextButtons.forEach(button => {
+      button.addEventListener('click', goToNextStep);
+    });
+    
+    prevButtons.forEach(button => {
+      button.addEventListener('click', goToPrevStep);
+    });
+    
+    addEmployerBtn.addEventListener('click', addEmployer);
+    
+    separationReasonRadios.forEach(radio => {
+      radio.addEventListener('change', toggleOtherReason);
+    });
+    
+    form.addEventListener('submit', submitForm);
+    
+    // Functions
+    function goToNextStep() {
+      // Validate current step
+      if (!validateStep(currentStep)) {
+        showAlert('Please fill in all required fields.', 'error');
+        return;
+      }
+      
+      // Hide current step
+      hideStep(currentStep);
+      
+      // Mark current step as completed
+      markStepCompleted(currentStep);
+      
+      // Show next step
+      currentStep++;
+      showStep(currentStep);
+      
+      // If going to review step, populate review content
+      if (currentStep === 4) {
+        populateReview();
+      }
+    }
+    
+    function goToPrevStep() {
+      // Hide current step
+      hideStep(currentStep);
+      
+      // Show previous step
+      currentStep--;
+      showStep(currentStep);
+    }
+    
+    function showStep(step) {
+      // Show the step content
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      stepContent.classList.add('active');
+      
+      // Update the step indicator
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.add('active');
+    }
+    
+    function hideStep(step) {
+      // Hide the step content
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      stepContent.classList.remove('active');
+      
+      // Update the step indicator
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.remove('active');
+    }
+    
+    function markStepCompleted(step) {
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.add('completed');
+    }
+    
+    function validateStep(step) {
+      // Get all required inputs in the current step
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      const requiredInputs = stepContent.querySelectorAll('[required]');
+      
+      // Check if all required inputs have values
+      for (const input of requiredInputs) {
+        if (!input.value.trim()) {
+          return false;
+        }
+      }
+      
+      return true;
+    }
+    
+    function addEmployer() {
+      const employerCount = document.querySelectorAll('.employment-record').length;
+      const employerIndex = employerCount + 1;
+      
+      const employerHtml = `
+        <div class="employment-record">
+          <h3>Employer #${employerIndex}</h3>
+          <div class="form-group">
+            <label for="employerName${employerIndex}">Employer Name</label>
+            <input type="text" id="employerName${employerIndex}" name="employerName${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="employerId${employerIndex}">Employer ID (if known)</label>
+            <input type="text" id="employerId${employerIndex}" name="employerId${employerIndex}">
+          </div>
+          <div class="form-group">
+            <label for="position${employerIndex}">Position/Title</label>
+            <input type="text" id="position${employerIndex}" name="position${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="startDate${employerIndex}">Start Date</label>
+            <input type="date" id="startDate${employerIndex}" name="startDate${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="endDate${employerIndex}">End Date</label>
+            <input type="date" id="endDate${employerIndex}" name="endDate${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="wages${employerIndex}">Monthly Wages ($)</label>
+            <input type="number" id="wages${employerIndex}" name="wages${employerIndex}" required>
+          </div>
+          <button type="button" class="btn btn-secondary" onclick="removeEmployer(this)">Remove</button>
+        </div>
+      `;
+      
+      additionalEmployers.insertAdjacentHTML('beforeend', employerHtml);
+    }
+    
+    // Make removeEmployer function available globally for the onclick handlers
+    window.removeEmployer = function(button) {
+      const employerRecord = button.parentNode;
+      employerRecord.remove();
+    };
+    
+    function toggleOtherReason() {
+      const selectedReason = document.querySelector('input[name="separationReason"]:checked').value;
+      
+      if (selectedReason === 'Other') {
+        otherReasonGroup.style.display = 'block';
+      } else {
+        otherReasonGroup.style.display = 'none';
+      }
+    }
+    
+    function populateReview() {
+      // Personal Information
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const ssn = document.getElementById('ssn').value;
+      const street = document.getElementById('street').value;
+      const city = document.getElementById('city').value;
+      const state = document.getElementById('state').value;
+      const zip = document.getElementById('zip').value;
+      
+      // Employment History
+      const employerName = document.getElementById('employerName').value;
+      const employerId = document.getElementById('employerId').value;
+      const position = document.getElementById('position').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const wages = document.getElementById('wages').value;
+      
+      // Separation Reason
+      const separationReason = document.querySelector('input[name="separationReason"]:checked').value;
+      const otherReason = document.getElementById('otherReason').value;
+      
+      // Build review HTML
+      let reviewHtml = `
+        <div style="margin-bottom: 1.5rem;">
+          <h3>Personal Information</h3>
+          <p><strong>Name:</strong> ${fullName}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>SSN:</strong> ${ssn}</p>
+          <p><strong>Address:</strong> ${street}, ${city}, ${state} ${zip}</p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h3>Employment History</h3>
+          <div style="margin-bottom: 1rem;">
+            <p><strong>Employer:</strong> ${employerName}</p>
+            <p><strong>Employer ID:</strong> ${employerId}</p>
+            <p><strong>Position:</strong> ${position}</p>
+            <p><strong>Employment Period:</strong> ${formatDate(startDate)} to ${formatDate(endDate)}</p>
+            <p><strong>Monthly Wages:</strong> $${wages}</p>
+          </div>
+      `;
+      
+      // Add additional employers
+      const additionalEmployerRecords = additionalEmployers.querySelectorAll('.employment-record');
+      additionalEmployerRecords.forEach((record, index) => {
+        const empIndex = index + 2;
+        const empName = record.querySelector(`#employerName${empIndex}`).value;
+        const empId = record.querySelector(`#employerId${empIndex}`).value;
+        const empPosition = record.querySelector(`#position${empIndex}`).value;
+        const empStartDate = record.querySelector(`#startDate${empIndex}`).value;
+        const empEndDate = record.querySelector(`#endDate${empIndex}`).value;
+        const empWages = record.querySelector(`#wages${empIndex}`).value;
+        
+        reviewHtml += `
+          <div style="margin-bottom: 1rem;">
+            <p><strong>Employer:</strong> ${empName}</p>
+            <p><strong>Employer ID:</strong> ${empId}</p>
+            <p><strong>Position:</strong> ${empPosition}</p>
+            <p><strong>Employment Period:</strong> ${formatDate(empStartDate)} to ${formatDate(empEndDate)}</p>
+            <p><strong>Monthly Wages:</strong> $${empWages}</p>
+          </div>
+        `;
+      });
+      
+      reviewHtml += `
+        </div>
+        
+        <div>
+          <h3>Separation Reason</h3>
+          <p><strong>Reason:</strong> ${separationReason}</p>
+      `;
+      
+      if (separationReason === 'Other' && otherReason) {
+        reviewHtml += `<p><strong>Explanation:</strong> ${otherReason}</p>`;
+      }
+      
+      reviewHtml += `</div>`;
+      
+      // Set review content
+      reviewContent.innerHTML = reviewHtml;
+    }
+    
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    
+    async function submitForm(e) {
+      e.preventDefault();
+      
+      // Check if certification checkbox is checked
+      const certifyCheckbox = document.getElementById('certify');
+      if (!certifyCheckbox.checked) {
+        showAlert('Please certify that the information is accurate.', 'error');
+        return;
+      }
+      
+      // Disable submit button and show loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      
+      try {
+        // Collect claim data
+        const claimData = {
+          userId: "USER123", // Hardcoded for demo
+          separationReason: document.querySelector('input[name="separationReason"]:checked').value,
+          employmentHistory: [
+            {
+              employerId: document.getElementById('employerId').value,
+              employerName: document.getElementById('employerName').value,
+              startDate: document.getElementById('startDate').value,
+              endDate: document.getElementById('endDate').value,
+              wages: parseFloat(document.getElementById('wages').value),
+              position: document.getElementById('position').value
+            }
+          ]
+        };
+        
+        // Add additional employers
+        const additionalEmployerRecords = additionalEmployers.querySelectorAll('.employment-record');
+        additionalEmployerRecords.forEach((record, index) => {
+          const empIndex = index + 2;
+          claimData.employmentHistory.push({
+            employerId: record.querySelector(`#employerId${empIndex}`).value,
+            employerName: record.querySelector(`#employerName${empIndex}`).value,
+            startDate: record.querySelector(`#startDate${empIndex}`).value,
+            endDate: record.querySelector(`#endDate${empIndex}`).value,
+            wages: parseFloat(record.querySelector(`#wages${empIndex}`).value),
+            position: record.querySelector(`#position${empIndex}`).value
+          });
+        });
+        
+        // Prepare GraphQL mutation
+        const mutation = {
+          query: `
+            mutation SubmitClaim($input: ClaimInput!) {
+              submitClaim(input: $input) {
+                claim {
+                  claimId
+                  status
+                }
+                success
+                message
+              }
+            }
+          `,
+          variables: {
+            input: claimData
+          }
+        };
+        
+        // For demo purposes, we'll simulate a successful submission
+        console.log('Simulating successful submission for demo');
+        console.log('Claim data:', claimData);
+        
+        // Short delay to simulate processing
+        setTimeout(() => {
+          // Show success step
+          hideStep(currentStep);
+          currentStep = 5;
+          showStep(currentStep);
+          
+          // Generate a random claim reference number
+          const claimReference = document.getElementById('claim-reference');
+          claimReference.textContent = 'CL-' + Math.floor(10000 + Math.random() * 90000);
+        }, 1500);
+        
+      } catch (error) {
+        console.log('Error submitting claim:', error);
+        showAlert('An error occurred while submitting your claim. Please try again.', 'error');
+        
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Claim';
+      }
+    }
+    
+    function showAlert(message, type) {
+      alertBox.textContent = message;
+      alertBox.className = 'alert';
+      
+      if (type === 'success') {
+        alertBox.classList.add('success');
+      }
+      
+      alertBox.style.display = 'block';
+      
+      // Hide after 5 seconds
+      setTimeout(() => {
+        alertBox.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
