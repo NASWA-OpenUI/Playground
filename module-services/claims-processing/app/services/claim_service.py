@@ -244,4 +244,4 @@ def simulate_employer_wait(db: Session, claim_reference_id: str) -> schemas.Clai
         changed_by="system"
     )
     
-    return update_claim_status(db, claim_reference_id, status_update){\rtf1}
+    return update_claim_status(db, claim_reference_id, status_update)
