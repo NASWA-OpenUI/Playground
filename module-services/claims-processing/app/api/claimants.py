@@ -6,7 +6,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
+from app.schemas.database import get_db
 from app.models import models
 from app.services import claim_service
 
