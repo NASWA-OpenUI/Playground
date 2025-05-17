@@ -43,7 +43,7 @@ services:
 
   # Claimant Services
   claimant-services:
-    build: ./module-services/claimant-services
+    build: ./module-services/claimant-services/server
     ports:
       - "4000:4000"
     depends_on:
