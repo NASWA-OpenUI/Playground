@@ -1,45 +1,58 @@
+# Update docker-compose.yml to be more robust
 version: '3.8'
 
 services:
   # API Gateway
   api-gateway:
     build:
-      context: ./api-gateway
+      context: ./modular-ui-system/api-gateway
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
       - NODE_ENV=development
     volumes:
-      - ./api-gateway:/app
+      - ./modular-ui-system/api-gateway:/app
       - /app/node_modules
-    depends_on:
-      - business-rules-engine
-      - claims-processing
-      - employer-services
-      - benefits-administration
     networks:
       - ui-modernization
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Business Rules Engine
   business-rules-engine:
     build:
-      context: ./business-rules-engine
+      context: ./modular-ui-system/business-rules-engine
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     environment:
       - PORT=3001
       - NODE_ENV=development
     volumes:
-      - ./business-rules-engine:/app
+      - ./modular-ui-system/business-rules-engine:/app
       - /app/node_modules
     networks:
       - ui-modernization
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Claims Processing
   claims-processing:
     build:
-      context: ./claims-processing
+      context: ./modular-ui-system/claims-processing
+      dockerfile: Dockerfile
     ports:
       - "3002:3002"
     environment:
@@ -47,17 +60,24 @@ services:
       - NODE_ENV=development
       - API_GATEWAY_URL=http://api-gateway:3000
     volumes:
-      - ./claims-processing:/app
+      - ./modular-ui-system/claims-processing:/app
       - /app/node_modules
-    depends_on:
-      - api-gateway
     networks:
       - ui-modernization
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Employer Services
   employer-services:
     build:
-      context: ./employer-services
+      context: ./modular-ui-system/employer-services
+      dockerfile: Dockerfile
     ports:
       - "3003:3003"
     environment:
@@ -65,45 +85,66 @@ services:
       - FLASK_ENV=development
       - API_GATEWAY_URL=http://api-gateway:3000
     volumes:
-      - ./employer-services:/app
-    depends_on:
-      - api-gateway
+      - ./modular-ui-system/employer-services:/app
     networks:
       - ui-modernization
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Benefits Administration
   benefits-administration:
     build:
-      context: ./benefits-administration
+      context: ./modular-ui-system/benefits-administration
+      dockerfile: Dockerfile
     ports:
       - "3004:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ApiGatewayUrl=http://api-gateway:3000
     volumes:
-      - ./benefits-administration:/app
+      - ./modular-ui-system/benefits-administration:/app
       - /app/obj
       - /app/bin
-    depends_on:
-      - api-gateway
     networks:
       - ui-modernization
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Claimant Services Frontend
   claimant-services:
     build:
-      context: ./claimant-services
+      context: ./modular-ui-system/claimant-services
+      dockerfile: Dockerfile
     ports:
       - "3005:3000"
     environment:
       - REACT_APP_API_URL=http://localhost:3000/api
+      - WDS_SOCKET_PORT=0
     volumes:
-      - ./claimant-services:/app
+      - ./modular-ui-system/claimant-services:/app
       - /app/node_modules
-    depends_on:
-      - api-gateway
     networks:
       - ui-modernization
+    depends_on:
+      - api-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   ui-modernization:

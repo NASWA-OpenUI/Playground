@@ -1,3 +1,4 @@
+# Update package.json to include start script
 {
   "name": "ui-modernization-api-gateway",
   "version": "1.0.0",
