@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, DECIMAL, Date, ForeignKey, TIMES
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
-from app.db.database import Base
+from app.schemas.database import Base
 
 
 class Claimant(Base):
