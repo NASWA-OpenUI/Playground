@@ -1,4 +1,3 @@
-# Update docker-compose.yml to be more robust
 version: '3.8'
 
 services:
@@ -17,12 +16,6 @@ services:
       - /app/node_modules
     networks:
       - ui-modernization
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # Business Rules Engine
   business-rules-engine:
@@ -41,12 +34,6 @@ services:
       - ui-modernization
     depends_on:
       - api-gateway
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # Claims Processing
   claims-processing:
@@ -66,12 +53,6 @@ services:
       - ui-modernization
     depends_on:
       - api-gateway
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # Employer Services
   employer-services:
@@ -90,12 +71,6 @@ services:
       - ui-modernization
     depends_on:
       - api-gateway
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3003"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # Benefits Administration
   benefits-administration:
@@ -109,18 +84,10 @@ services:
       - ApiGatewayUrl=http://api-gateway:3000
     volumes:
       - ./modular-ui-system/benefits-administration:/app
-      - /app/obj
-      - /app/bin
     networks:
       - ui-modernization
     depends_on:
       - api-gateway
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # Claimant Services Frontend
   claimant-services:
@@ -139,12 +106,6 @@ services:
       - ui-modernization
     depends_on:
       - api-gateway
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
 networks:
   ui-modernization:

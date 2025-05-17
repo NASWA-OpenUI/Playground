@@ -3,13 +3,12 @@ FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 
 WORKDIR /app
 
-# Copy everything
-COPY . ./
-
-# Restore as distinct layers
+# Copy csproj and restore
+COPY ["BenefitsAdmin.csproj", "./"]
 RUN dotnet restore
 
-# Build and publish a release
+# Copy everything else and build
+COPY . ./
 RUN dotnet publish -c Release -o out
 
 # Build runtime image
@@ -18,7 +17,5 @@ WORKDIR /app
 COPY --from=build /app/out .
 
 EXPOSE 80
-EXPOSE 443
 
 ENTRYPOINT ["dotnet", "BenefitsAdmin.dll"]
-
