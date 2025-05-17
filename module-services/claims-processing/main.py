@@ -11,7 +11,7 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db, engine, Base
+from app.schemas.database import get_db, engine, Base
 from app.api import claims, claimants
 from app.schemas import models as schemas
 
