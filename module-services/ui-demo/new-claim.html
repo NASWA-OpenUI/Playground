@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File New Claim - Unemployment Insurance</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    header {
+      background-color: #2c3e50;
+      color: white;
+      padding: 1rem 0;
+    }
+    
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+    
+    h1 {
+      margin-bottom: 2rem;
+      color: #2c3e50;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stepper {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    
+    .stepper::before {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #e0e0e0;
+      z-index: 1;
+    }
+    
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .step-number {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background-color: #e0e0e0;
+      color: #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .step.active .step-number {
+      background-color: #3498db;
+      color: white;
+    }
+    
+    .step.completed .step-number {
+      background-color: #2ecc71;
+      color: white;
+    }
+    
+    .step-label {
+      font-size: 0.875rem;
+      color: #666;
+    }
+    
+    .step.active .step-label {
+      color: #3498db;
+      font-weight: 600;
+    }
+    
+    .step.completed .step-label {
+      color: #2ecc71;
+      font-weight: 600;
+    }
+    
+    .form-step {
+      display: none;
+    }
+    
+    .form-step.active {
+      display: block;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="date"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: #3498db;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    
+    .btn-secondary {
+      background-color: #95a5a6;
+    }
+    
+    .btn:hover {
+      opacity: 0.9;
+    }
+    
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+    }
+    
+    .employment-record {
+      border: 1px solid #eee;
+      border-radius: 4px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background-color: #f9f9f9;
+    }
+    
+    .radio-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .radio-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .radio-option input[type="radio"] {
+      margin-right: 0.5rem;
+    }
+    
+    .radio-description {
+      margin-left: 1.5rem;
+      margin-top: -0.25rem;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      color: #666;
+    }
+    
+    #other-reason-group {
+      display: none;
+      margin-top: 1rem;
+    }
+    
+    .success-step {
+      text-align: center;
+    }
+    
+    .success-icon {
+      display: inline-block;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: #2ecc71;
+      color: white;
+      font-size: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+    }
+    
+    .alert {
+      padding: 1rem;
+      border-radius: 4px;
+      background-color: #f8d7da;
+      color: #721c24;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    
+    .alert.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    footer {
+      background-color: #ecf0f1;
+      padding: 1.5rem 0;
+      text-align: center;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <h2>Unemployment Insurance</h2>
+      <nav>
+        <a href="index.html" style="color: white; margin-right: 1rem;">Dashboard</a>
+        <a href="new-claim.html" style="color: white;">File New Claim</a>
+      </nav>
+    </div>
+  </header>
+  
+  <div class="container">
+    <h1>File Unemployment Claim</h1>
+    
+    <div id="alert-box" class="alert"></div>
+    
+    <div class="card">
+      <div class="stepper">
+        <div class="step active" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-label">Personal Info</div>
+        </div>
+        <div class="step" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-label">Employment History</div>
+        </div>
+        <div class="step" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-label">Separation Reason</div>
+        </div>
+        <div class="step" data-step="4">
+          <div class="step-number">4</div>
+          <div class="step-label">Review</div>
+        </div>
+        <div class="step" data-step="5">
+          <div class="step-number">5</div>
+          <div class="step-label">Submit</div>
+        </div>
+      </div>
+      
+      <form id="claim-form">
+        <!-- Step 1: Personal Information -->
+        <div class="form-step active" data-step="1">
+          <h2>Personal Information</h2>
+          <p>Please provide your personal information below. This will be used to process your unemployment claim.</p>
+          
+          <div class="form-group">
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" name="fullName" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="ssn">Social Security Number</label>
+            <input type="text" id="ssn" name="ssn" required>
+          </div>
+          
+          <h3>Address Information</h3>
+          
+          <div class="form-group">
+            <label for="street">Street Address</label>
+            <input type="text" id="street" name="street" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="state">State</label>
+            <input type="text" id="state" name="state" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="zip">ZIP Code</label>
+            <input type="text" id="zip" name="zip" required>
+          </div>
+          
+          <div class="form-actions">
+            <div></div> <!-- Empty div for spacing -->
+            <button type="button" class="btn next-step">Next: Employment History</button>
+          </div>
+        </div>
+        
+        <!-- Step 2: Employment History -->
+        <div class="form-step" data-step="2">
+          <h2>Employment History</h2>
+          <p>Please provide information about your last employer. If you've had multiple employers in the last 18 months, you can add them below.</p>
+          
+          <div class="employment-record">
+            <h3>Primary Employer</h3>
+            <div class="form-group">
+              <label for="employerName">Employer Name</label>
+              <input type="text" id="employerName" name="employerName" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="employerId">Employer ID (if known)</label>
+              <input type="text" id="employerId" name="employerId">
+            </div>
+            
+            <div class="form-group">
+              <label for="position">Position/Title</label>
+              <input type="text" id="position" name="position" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="startDate">Start Date</label>
+              <input type="date" id="startDate" name="startDate" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="endDate">End Date</label>
+              <input type="date" id="endDate" name="endDate" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="wages">Monthly Wages ($)</label>
+              <input type="number" id="wages" name="wages" required>
+            </div>
+          </div>
+          
+          <div id="additional-employers"></div>
+          
+          <button type="button" id="add-employer-btn" class="btn btn-secondary">Add Another Employer</button>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary prev-step">Back: Personal Info</button>
+            <button type="button" class="btn next-step">Next: Separation Reason</button>
+          </div>
+        </div>
+        
+        <!-- Step 3: Separation Reason -->
+        <div class="form-step" data-step="3">
+          <h2>Reason for Separation</h2>
+          <p>Please indicate the reason you are no longer working with your most recent employer.</p>
+          
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" id="layoff" name="separationReason" value="Layoff" required>
+              <label for="layoff">Layoff</label>
+            </div>
+            <p class="radio-description">You were laid off due to lack of work, business slowdown, or company reorganization.</p>
+            
+            <div class="radio-option">
+              <input type="radio" id="termination" name="separationReason" value="Termination">
+              <label for="termination">Termination</label>
+            </div>
+            <p class="radio-description">Your employment was terminated by the employer.</p>
+            
+            <div class="radio-option">
+              <input type="radio" id="resignation" name="separationReason" value="Resignation">
+              <label for="resignation">Resignation</label>
+            </div>
+            <p class="radio-description">You voluntarily quit your job.</p>
+            
+            <div class="radio-option">
+              <input type="radio" id="other" name="separationReason" value="Other">
+              <label for="other">Other</label>
+            </div>
+            <p class="radio-description">The reason does not fit any of the categories above.</p>
+            
+            <div id="other-reason-group">
+              <label for="otherReason">Please explain:</label>
+              <textarea id="otherReason" name="otherReason" rows="4"></textarea>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary prev-step">Back: Employment History</button>
+            <button type="button" class="btn next-step">Next: Review</button>
+          </div>
+        </div>
+        
+        <!-- Step 4: Review -->
+        <div class="form-step" data-step="4">
+          <h2>Review Your Claim</h2>
+          <p>Please review the information below before submitting your claim.</p>
+          
+          <div id="review-content"></div>
+          
+          <div class="form-group">
+            <div class="radio-option">
+              <input type="checkbox" id="certify" name="certify" required>
+              <label for="certify">I certify that the information provided is true and accurate to the best of my knowledge. I understand that providing false information may result in penalties and disqualification from benefits.</label>
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary prev-step">Back: Separation Reason</button>
+            <button type="submit" id="submit-btn" class="btn">Submit Claim</button>
+          </div>
+        </div>
+        
+        <!-- Step 5: Success -->
+        <div class="form-step" data-step="5">
+          <div class="success-step">
+            <div class="success-icon">✓</div>
+            <h2>Claim Submitted Successfully!</h2>
+            <p>Your claim has been submitted. Your claim reference number is:</p>
+            <h3 id="claim-reference" style="color: #2c3e50; margin-bottom: 1.5rem;"></h3>
+            <p>You will receive confirmation via email shortly. Please check your dashboard for updates on your claim status.</p>
+            <a href="index.html" class="btn" style="margin-top: 1rem;">Return to Dashboard</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <footer>
+    <p>&copy; 2025 Unemployment Insurance System. All rights reserved.</p>
+  </footer>
+
+  <script>
+    // DOM Elements
+    const form = document.getElementById('claim-form');
+    const steps = document.querySelectorAll('.form-step');
+    const stepIndicators = document.querySelectorAll('.stepper .step');
+    const nextButtons = document.querySelectorAll('.next-step');
+    const prevButtons = document.querySelectorAll('.prev-step');
+    const addEmployerBtn = document.getElementById('add-employer-btn');
+    const additionalEmployers = document.getElementById('additional-employers');
+    const otherReasonGroup = document.getElementById('other-reason-group');
+    const separationReasonRadios = document.querySelectorAll('input[name="separationReason"]');
+    const reviewContent = document.getElementById('review-content');
+    const submitBtn = document.getElementById('submit-btn');
+    const alertBox = document.getElementById('alert-box');
+    
+    // Current step
+    let currentStep = 1;
+    
+    // Event listeners
+    nextButtons.forEach(button => {
+      button.addEventListener('click', goToNextStep);
+    });
+    
+    prevButtons.forEach(button => {
+      button.addEventListener('click', goToPrevStep);
+    });
+    
+    addEmployerBtn.addEventListener('click', addEmployer);
+    
+    separationReasonRadios.forEach(radio => {
+      radio.addEventListener('change', toggleOtherReason);
+    });
+    
+    form.addEventListener('submit', submitForm);
+    
+    // Functions
+    function goToNextStep() {
+      // Validate current step
+      if (!validateStep(currentStep)) {
+        showAlert('Please fill in all required fields.', 'error');
+        return;
+      }
+      
+      // Hide current step
+      hideStep(currentStep);
+      
+      // Mark current step as completed
+      markStepCompleted(currentStep);
+      
+      // Show next step
+      currentStep++;
+      showStep(currentStep);
+      
+      // If going to review step, populate review content
+      if (currentStep === 4) {
+        populateReview();
+      }
+    }
+    
+    function goToPrevStep() {
+      // Hide current step
+      hideStep(currentStep);
+      
+      // Show previous step
+      currentStep--;
+      showStep(currentStep);
+    }
+    
+    function showStep(step) {
+      // Show the step content
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      stepContent.classList.add('active');
+      
+      // Update the step indicator
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.add('active');
+    }
+    
+    function hideStep(step) {
+      // Hide the step content
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      stepContent.classList.remove('active');
+      
+      // Update the step indicator
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.remove('active');
+    }
+    
+    function markStepCompleted(step) {
+      const stepIndicator = document.querySelector(`.stepper .step[data-step="${step}"]`);
+      stepIndicator.classList.add('completed');
+    }
+    
+    function validateStep(step) {
+      // Get all required inputs in the current step
+      const stepContent = document.querySelector(`.form-step[data-step="${step}"]`);
+      const requiredInputs = stepContent.querySelectorAll('[required]');
+      
+      // Check if all required inputs have values
+      for (const input of requiredInputs) {
+        if (!input.value.trim()) {
+          return false;
+        }
+      }
+      
+      return true;
+    }
+    
+    function addEmployer() {
+      const employerCount = document.querySelectorAll('.employment-record').length;
+      const employerIndex = employerCount + 1;
+      
+      const employerHtml = `
+        <div class="employment-record">
+          <h3>Employer #${employerIndex}</h3>
+          <div class="form-group">
+            <label for="employerName${employerIndex}">Employer Name</label>
+            <input type="text" id="employerName${employerIndex}" name="employerName${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="employerId${employerIndex}">Employer ID (if known)</label>
+            <input type="text" id="employerId${employerIndex}" name="employerId${employerIndex}">
+          </div>
+          <div class="form-group">
+            <label for="position${employerIndex}">Position/Title</label>
+            <input type="text" id="position${employerIndex}" name="position${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="startDate${employerIndex}">Start Date</label>
+            <input type="date" id="startDate${employerIndex}" name="startDate${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="endDate${employerIndex}">End Date</label>
+            <input type="date" id="endDate${employerIndex}" name="endDate${employerIndex}" required>
+          </div>
+          <div class="form-group">
+            <label for="wages${employerIndex}">Monthly Wages ($)</label>
+            <input type="number" id="wages${employerIndex}" name="wages${employerIndex}" required>
+          </div>
+          <button type="button" class="btn btn-secondary" onclick="removeEmployer(this)">Remove</button>
+        </div>
+      `;
+      
+      additionalEmployers.insertAdjacentHTML('beforeend', employerHtml);
+    }
+    
+    // Make removeEmployer function available globally for the onclick handlers
+    window.removeEmployer = function(button) {
+      const employerRecord = button.parentNode;
+      employerRecord.remove();
+    };
+    
+    function toggleOtherReason() {
+      const selectedReason = document.querySelector('input[name="separationReason"]:checked').value;
+      
+      if (selectedReason === 'Other') {
+        otherReasonGroup.style.display = 'block';
+      } else {
+        otherReasonGroup.style.display = 'none';
+      }
+    }
+    
+    function populateReview() {
+      // Personal Information
+      const fullName = document.getElementById('fullName').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const ssn = document.getElementById('ssn').value;
+      const street = document.getElementById('street').value;
+      const city = document.getElementById('city').value;
+      const state = document.getElementById('state').value;
+      const zip = document.getElementById('zip').value;
+      
+      // Employment History
+      const employerName = document.getElementById('employerName').value;
+      const employerId = document.getElementById('employerId').value;
+      const position = document.getElementById('position').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const wages = document.getElementById('wages').value;
+      
+      // Separation Reason
+      const separationReason = document.querySelector('input[name="separationReason"]:checked').value;
+      const otherReason = document.getElementById('otherReason').value;
+      
+      // Build review HTML
+      let reviewHtml = `
+        <div style="margin-bottom: 1.5rem;">
+          <h3>Personal Information</h3>
+          <p><strong>Name:</strong> ${fullName}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Phone:</strong> ${phone}</p>
+          <p><strong>SSN:</strong> ${ssn}</p>
+          <p><strong>Address:</strong> ${street}, ${city}, ${state} ${zip}</p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h3>Employment History</h3>
+          <div style="margin-bottom: 1rem;">
+            <p><strong>Employer:</strong> ${employerName}</p>
+            <p><strong>Employer ID:</strong> ${employerId}</p>
+            <p><strong>Position:</strong> ${position}</p>
+            <p><strong>Employment Period:</strong> ${formatDate(startDate)} to ${formatDate(endDate)}</p>
+            <p><strong>Monthly Wages:</strong> $${wages}</p>
+          </div>
+      `;
+      
+      // Add additional employers
+      const additionalEmployerRecords = additionalEmployers.querySelectorAll('.employment-record');
+      additionalEmployerRecords.forEach((record, index) => {
+        const empIndex = index + 2;
+        const empName = record.querySelector(`#employerName${empIndex}`).value;
+        const empId = record.querySelector(`#employerId${empIndex}`).value;
+        const empPosition = record.querySelector(`#position${empIndex}`).value;
+        const empStartDate = record.querySelector(`#startDate${empIndex}`).value;
+        const empEndDate = record.querySelector(`#endDate${empIndex}`).value;
+        const empWages = record.querySelector(`#wages${empIndex}`).value;
+        
+        reviewHtml += `
+          <div style="margin-bottom: 1rem;">
+            <p><strong>Employer:</strong> ${empName}</p>
+            <p><strong>Employer ID:</strong> ${empId}</p>
+            <p><strong>Position:</strong> ${empPosition}</p>
+            <p><strong>Employment Period:</strong> ${formatDate(empStartDate)} to ${formatDate(empEndDate)}</p>
+            <p><strong>Monthly Wages:</strong> $${empWages}</p>
+          </div>
+        `;
+      });
+      
+      reviewHtml += `
+        </div>
+        
+        <div>
+          <h3>Separation Reason</h3>
+          <p><strong>Reason:</strong> ${separationReason}</p>
+      `;
+      
+      if (separationReason === 'Other' && otherReason) {
+        reviewHtml += `<p><strong>Explanation:</strong> ${otherReason}</p>`;
+      }
+      
+      reviewHtml += `</div>`;
+      
+      // Set review content
+      reviewContent.innerHTML = reviewHtml;
+    }
+    
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    
+    async function submitForm(e) {
+      e.preventDefault();
+      
+      // Check if certification checkbox is checked
+      const certifyCheckbox = document.getElementById('certify');
+      if (!certifyCheckbox.checked) {
+        showAlert('Please certify that the information is accurate.', 'error');
+        return;
+      }
+      
+      // Disable submit button and show loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      
+      try {
+        // Collect claim data
+        const claimData = {
+          userId: "USER123", // Hardcoded for demo
+          separationReason: document.querySelector('input[name="separationReason"]:checked').value,
+          employmentHistory: [
+            {
+              employerId: document.getElementById('employerId').value,
+              employerName: document.getElementById('employerName').value,
+              startDate: document.getElementById('startDate').value,
+              endDate: document.getElementById('endDate').value,
+              wages: parseFloat(document.getElementById('wages').value),
+              position: document.getElementById('position').value
+            }
+          ]
+        };
+        
+        // Add additional employers
+        const additionalEmployerRecords = additionalEmployers.querySelectorAll('.employment-record');
+        additionalEmployerRecords.forEach((record, index) => {
+          const empIndex = index + 2;
+          claimData.employmentHistory.push({
+            employerId: record.querySelector(`#employerId${empIndex}`).value,
+            employerName: record.querySelector(`#employerName${empIndex}`).value,
+            startDate: record.querySelector(`#startDate${empIndex}`).value,
+            endDate: record.querySelector(`#endDate${empIndex}`).value,
+            wages: parseFloat(record.querySelector(`#wages${empIndex}`).value),
+            position: record.querySelector(`#position${empIndex}`).value
+          });
+        });
+        
+        // Prepare GraphQL mutation
+        const mutation = {
+          query: `
+            mutation SubmitClaim($input: ClaimInput!) {
+              submitClaim(input: $input) {
+                claim {
+                  claimId
+                  status
+                }
+                success
+                message
+              }
+            }
+          `,
+          variables: {
+            input: claimData
+          }
+        };
+        
+        // For demo purposes, we'll simulate a successful submission
+        console.log('Simulating successful submission for demo');
+        console.log('Claim data:', claimData);
+        
+        // Short delay to simulate processing
+        setTimeout(() => {
+          // Show success step
+          hideStep(currentStep);
+          currentStep = 5;
+          showStep(currentStep);
+          
+          // Generate a random claim reference number
+          const claimReference = document.getElementById('claim-reference');
+          claimReference.textContent = 'CL-' + Math.floor(10000 + Math.random() * 90000);
+        }, 1500);
+        
+      } catch (error) {
+        console.log('Error submitting claim:', error);
+        showAlert('An error occurred while submitting your claim. Please try again.', 'error');
+        
+        // Re-enable submit button
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Claim';
+      }
+    }
+    
+    function showAlert(message, type) {
+      alertBox.textContent = message;
+      alertBox.className = 'alert';
+      
+      if (type === 'success') {
+        alertBox.classList.add('success');
+      }
+      
+      alertBox.style.display = 'block';
+      
+      // Hide after 5 seconds
+      setTimeout(() => {
+        alertBox.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
