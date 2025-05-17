@@ -1,9 +1,22 @@
 FROM nginx:alpine
 
-COPY ./index.html /usr/share/nginx/html/
-COPY ./style.css /usr/share/nginx/html/
-COPY ./script.js /usr/share/nginx/html/
-COPY ./logo.svg /usr/share/nginx/html/
+WORKDIR /usr/share/nginx/html
+
+# Copy HTML files
+COPY index.html .
+COPY new-claim.html .
+
+# Copy CSS, JS and assets
+COPY style.css .
+COPY script.js .
+COPY logo.svg .
+COPY naswa_logo.jpg .
+
+# Create a basic favicon
+RUN echo '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><circle cx="8" cy="8" r="8" fill="#3498db"/></svg>' > favicon.ico
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
