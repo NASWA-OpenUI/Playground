@@ -2,11 +2,9 @@ using BenefitsAdmin.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Additional configuration is required to successfully run gRPC on macOS.
-// For instructions on how to configure Kestrel and gRPC clients on macOS, visit https://go.microsoft.com/fwlink/?linkid=2099682
-
-// Add services to the container.
+// Add services to the container
 builder.Services.AddGrpc();
+builder.Services.AddCustomHealthChecks(); // Add our custom health checks
 
 // Register HTTP client for API Gateway communication
 builder.Services.AddHttpClient("ApiGateway", client =>
@@ -21,7 +19,8 @@ builder.Services.AddSingleton<EventBusService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
+app.UseCustomHealthChecks(); // Use our custom health checks
 app.MapGrpcService<BenefitsService>();
 app.MapGet("/", () => "Benefits Administration Service - Communication with this gRPC service must be made through a gRPC client.");
 

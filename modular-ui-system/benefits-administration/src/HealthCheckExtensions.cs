@@ -1,44 +1,47 @@
-# Include a health endpoint for Benefits Administration
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-public static class HealthCheckExtensions
+namespace BenefitsAdmin.Services
 {
-    public static void AddCustomHealthChecks(this IServiceCollection services)
+    public static class HealthCheckExtensions
     {
-        services.AddHealthChecks()
-            .AddCheck("self", () => HealthCheckResult.Healthy());
-    }
-
-    public static void UseCustomHealthChecks(this IApplicationBuilder app)
-    {
-        app.UseHealthChecks("/health", new HealthCheckOptions
+        public static void AddCustomHealthChecks(this IServiceCollection services)
         {
-            ResponseWriter = WriteResponse
-        });
-    }
+            services.AddHealthChecks()
+                .AddCheck("self", () => HealthCheckResult.Healthy());
+        }
 
-    private static Task WriteResponse(HttpContext context, HealthReport result)
-    {
-        context.Response.ContentType = "application/json";
-        
-        var response = new
+        public static void UseCustomHealthChecks(this IApplicationBuilder app)
         {
-            status = result.Status.ToString(),
-            checks = result.Entries.Select(e => new
+            app.UseHealthChecks("/health", new HealthCheckOptions
             {
-                name = e.Key,
-                status = e.Value.Status.ToString(),
-                description = e.Value.Description
-            }),
-            duration = result.TotalDuration
-        };
-        
-        return context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                ResponseWriter = WriteResponse
+            });
+        }
+
+        private static Task WriteResponse(HttpContext context, HealthReport result)
+        {
+            context.Response.ContentType = "application/json";
+            
+            var response = new
+            {
+                status = result.Status.ToString(),
+                checks = result.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description
+                }),
+                duration = result.TotalDuration
+            };
+            
+            return context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
     }
 }
