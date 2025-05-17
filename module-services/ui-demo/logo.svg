@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        .primary { fill: #2c3e50; }
+        .secondary { fill: #3498db; }
+        .accent { fill: #e74c3c; }
+    </style>
+    
+    <!-- Base Circle -->
+    <circle cx="60" cy="60" r="50" fill="white" stroke="#3498db" stroke-width="4"/>
+    
+    <!-- UI Letters -->
+    <text x="60" y="70" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" class="primary">UI</text>
+    
+    <!-- Connection Lines -->
+    <path d="M40 40 L30 25 M80 40 L90 25 M40 80 L30 95 M80 80 L90 95" stroke="#3498db" stroke-width="3" fill="none"/>
+    
+    <!-- Connection Nodes -->
+    <circle cx="30" cy="25" r="6" class="secondary"/>
+    <circle cx="90" cy="25" r="6" class="secondary"/>
+    <circle cx="30" cy="95" r="6" class="secondary"/>
+    <circle cx="90" cy="95" r="6" class="secondary"/>
+</svg>

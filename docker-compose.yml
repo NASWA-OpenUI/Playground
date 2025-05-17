@@ -2,111 +2,133 @@ version: '3.8'
 
 services:
   # API Gateway
-  api-gateway:
-    build:
-      context: ./modular-ui-system/api-gateway
-      dockerfile: Dockerfile
+  traefik:
+    image: traefik:v2.5
+    ports:
+      - "80:80"      # Web traffic
+      - "8080:8080"  # Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./module-services/api-gateway/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./module-services/api-gateway/traefik-dynamic-conf.yml:/etc/traefik/traefik-dynamic-conf.yml:ro"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.entrypoints=web"
+
+  # Protocol Conversion Middleware
+  protocol-converter:
+    build: ./module-services/api-gateway
     ports:
       - "3000:3000"
     environment:
-      - PORT=3000
-      - NODE_ENV=development
-    volumes:
-      - ./modular-ui-system/api-gateway:/app
-      - /app/node_modules
-    networks:
-      - ui-modernization
+      - CLAIMS_SERVICE_URL=http://claims-processing:8000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.converter.rule=PathPrefix(`/convert`)"
+      - "traefik.http.routers.converter.entrypoints=web"
+      - "traefik.http.services.converter.loadbalancer.server.port=3000"
 
-  # Business Rules Engine
-  business-rules-engine:
-    build:
-      context: ./modular-ui-system/business-rules-engine
-      dockerfile: Dockerfile
+  # API Gateway Dashboard
+  gateway-dashboard:
+    build: ./module-services/api-gateway/dashboard
     ports:
-      - "3001:3001"
-    environment:
-      - PORT=3001
-      - NODE_ENV=development
-    volumes:
-      - ./modular-ui-system/business-rules-engine:/app
-      - /app/node_modules
-    networks:
-      - ui-modernization
+      - "3030:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=PathPrefix(`/gateway-dashboard`)"
+      - "traefik.http.routers.dashboard.entrypoints=web"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=80"
+
+  # Claimant Services
+  claimant-services:
+    build: ./module-services/claimant-services
+    ports:
+      - "4000:4000"
     depends_on:
-      - api-gateway
+      - mongodb
+      - protocol-converter
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/claimant
+      - CONVERTER_URL=http://protocol-converter:3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.claimant-graphql.rule=PathPrefix(`/graphql`)"
+      - "traefik.http.routers.claimant-graphql.entrypoints=web"
+      - "traefik.http.services.claimant-graphql.loadbalancer.server.port=4000"
+
+  # Claimant UI
+  claimant-ui:
+    build: ./module-services/claimant-services/client
+    ports:
+      - "3001:80"
+    depends_on:
+      - claimant-services
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.claimant-ui.rule=PathPrefix(`/claimant`)"
+      - "traefik.http.routers.claimant-ui.entrypoints=web"
+      - "traefik.http.services.claimant-ui.loadbalancer.server.port=80"
 
   # Claims Processing
   claims-processing:
-    build:
-      context: ./modular-ui-system/claims-processing
-      dockerfile: Dockerfile
+    build: ./module-services/claims-processing
     ports:
-      - "3002:3002"
-    environment:
-      - PORT=3002
-      - NODE_ENV=development
-      - API_GATEWAY_URL=http://api-gateway:3000
-    volumes:
-      - ./modular-ui-system/claims-processing:/app
-      - /app/node_modules
-    networks:
-      - ui-modernization
+      - "8000:8000"
     depends_on:
-      - api-gateway
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/claims
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.claims-api.rule=PathPrefix(`/api/claims`)"
+      - "traefik.http.routers.claims-api.entrypoints=web"
+      - "traefik.http.services.claims-api.loadbalancer.server.port=8000"
 
-  # Employer Services
-  employer-services:
-    build:
-      context: ./modular-ui-system/employer-services
-      dockerfile: Dockerfile
+  # Claims Processing UI
+  claims-ui:
+    build: ./module-services/claims-processing/client
     ports:
-      - "3003:3003"
-    environment:
-      - FLASK_APP=app.py
-      - FLASK_ENV=development
-      - API_GATEWAY_URL=http://api-gateway:3000
-    volumes:
-      - ./modular-ui-system/employer-services:/app
-    networks:
-      - ui-modernization
+      - "3002:80"
     depends_on:
-      - api-gateway
+      - claims-processing
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.claims-ui.rule=PathPrefix(`/processor`)"
+      - "traefik.http.routers.claims-ui.entrypoints=web"
+      - "traefik.http.services.claims-ui.loadbalancer.server.port=80"
 
-  # Benefits Administration
-  benefits-administration:
-    build:
-      context: ./modular-ui-system/benefits-administration
-      dockerfile: Dockerfile
+  # Main UI (Landing Page)
+  ui-demo:
+    build: ./module-services/ui-demo
     ports:
-      - "3004:80"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ApiGatewayUrl=http://api-gateway:3000
-    volumes:
-      - ./modular-ui-system/benefits-administration:/app
-    networks:
-      - ui-modernization
-    depends_on:
-      - api-gateway
+      - "8081:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ui.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.ui.entrypoints=web"
+      - "traefik.http.services.ui.loadbalancer.server.port=80"
 
-  # Claimant Services Frontend
-  claimant-services:
-    build:
-      context: ./modular-ui-system/claimant-services
-      dockerfile: Dockerfile
+  # Databases
+  mongodb:
+    image: mongo:6.0
     ports:
-      - "3005:3000"
-    environment:
-      - REACT_APP_API_URL=http://localhost:3000/api
-      - WDS_SOCKET_PORT=0
+      - "27017:27017"
     volumes:
-      - ./modular-ui-system/claimant-services:/app
-      - /app/node_modules
-    networks:
-      - ui-modernization
-    depends_on:
-      - api-gateway
+      - mongodb-data:/data/db
 
-networks:
-  ui-modernization:
-    driver: bridge
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=claims
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  mongodb-data:
+  postgres-data:

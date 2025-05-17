@@ -1,0 +1,32 @@
+# Traefik Main Configuration
+
+# Enable Dashboard and API
+api:
+  dashboard: true
+  insecure: true  # For demo purposes; would use secure authentication in production
+
+# Entry Points Configuration
+entryPoints:
+  web:
+    address: ":80"
+
+# Docker Provider Configuration
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    watch: true
+  file:
+    filename: "/etc/traefik/traefik-dynamic-conf.yml"
+    watch: true
+
+# Log Configuration
+log:
+  level: "INFO"
+
+# Access Logs
+accessLog: {}
+
+# Metrics Configuration (for monitoring)
+metrics:
+  prometheus: {}
