@@ -60,7 +60,7 @@ services:
 
   # Claimant UI
   claimant-ui:
-    build: ./module-services/claimant-services/client
+    build: ./module-services/claimant-services/claimant
     ports:
       - "3001:80"
     depends_on:
@@ -88,7 +88,7 @@ services:
 
   # Claims Processing UI
   claims-ui:
-    build: ./module-services/claims-processing/client
+    build: ./module-services/claims-processing/claimant
     ports:
       - "3002:80"
     depends_on:
