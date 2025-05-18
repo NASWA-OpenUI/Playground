@@ -10,8 +10,10 @@ WORKDIR /app
 # Copy Maven wrapper and pom.xml first (for better Docker layer caching)
 COPY mvnw .
 COPY mvnw.cmd .
-COPY .mvn .mvn
 COPY pom.xml .
+
+# Create .mvn/wrapper directory and download maven-wrapper.jar if needed
+RUN mkdir -p .mvn/wrapper
 
 # Make maven wrapper executable
 RUN chmod +x ./mvnw
