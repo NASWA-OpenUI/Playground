@@ -26,9 +26,9 @@ COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
 # Expose ports
-EXPOSE 8080  # Main HTTP port
-EXPOSE 8778  # JMX monitoring port  
-EXPOSE 9779  # Debug port (optional)
+EXPOSE 8080
+EXPOSE 8778
+EXPOSE 9779
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
