@@ -333,8 +333,8 @@
         
         console.log('Sending claim data to backend:', claimData);
         
-        // Make actual API call to GraphQL endpoint
-        const response = await fetch('/graphql', {
+        // Using absolute URL with window.location.origin
+        const response = await fetch(window.location.origin + '/graphql', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
