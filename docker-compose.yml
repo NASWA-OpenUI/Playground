@@ -1,0 +1,118 @@
+services:
+  # Apache Camel Unified Gateway (replaces both Traefik and separate integration service)
+  camel-gateway:
+    build: ./module-services/camel-gateway
+    ports:
+      - "80:8080"     # Main HTTP port (replaces Traefik port 80)
+      - "8778:8778"   # JMX monitoring port
+      - "9779:9779"   # Debug port (optional)
+    depends_on:
+      - claimant-services
+      - claims-processing
+      - mongodb
+      - postgres
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVICES_CLAIMANT_URL=http://claimant-services:4000
+      - SERVICES_CLAIMS_PROCESSING_URL=http://claims-processing:8000
+    volumes:
+      # Mount static UI files (optional, for serving actual React/Vue builds)
+      - ./module-services/ui-demo:/app/static/ui-demo:ro
+      - ./module-services/claimant-services/claimant/build:/app/static/claimant:ro
+      - ./module-services/claims-processing/client/dist:/app/static/processor:ro
+
+  # Claimant Services (GraphQL API + MongoDB)
+  claimant-services:
+    build: ./module-services/claimant-services/server
+    ports:
+      - "4000:4000"   # Internal port (only accessible through Camel gateway)
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/claimant
+      - NODE_ENV=production
+    # No Traefik labels needed - all routing handled by Camel
+
+  # Claims Processing Service (REST API + PostgreSQL)
+  claims-processing:
+    build: ./module-services/claims-processing
+    ports:
+      - "8000:8000"   # Internal port (only accessible through Camel gateway)
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/claims
+      - PYTHON_ENV=production
+    # No Traefik labels needed - all routing handled by Camel
+
+  # MongoDB (for Claimant Services)
+  mongodb:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"  # Exposed for debugging/admin access
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=claimant
+    # Initialize with sample data if needed
+    # volumes:
+    #   - ./init-scripts/mongo-init.js:/docker-entrypoint-initdb.d/init.js:ro
+
+  # PostgreSQL (for Claims Processing)
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"   # Exposed for debugging/admin access
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=claims
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Initialize with sample data if needed
+    # volumes:
+    #   - ./init-scripts/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  # Optional: Redis for session management/caching (if needed later)
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+
+volumes:
+  mongodb-data:
+    driver: local
+  postgres-data:
+    driver: local
+  # redis-data:
+  #   driver: local
+
+networks:
+  default:
+    name: ui-modernization-demo
+    driver: bridge
+
+# Docker Compose Override for Development
+# Create docker-compose.override.yml for development-specific settings:
+# 
+# services:
+#   camel-gateway:
+#     environment:
+#       - SPRING_PROFILES_ACTIVE=development
+#       - LOGGING_LEVEL_GOV_DOL_UI_DEMO=DEBUG
+#     volumes:
+#       - ./module-services/camel-gateway/src:/app/src:ro  # Hot reload
+#   
+#   claimant-services:
+#     environment:
+#       - NODE_ENV=development
+#     volumes:
+#       - ./module-services/claimant-services/server/src:/app/src:ro
+#   
+#   claims-processing:
+#     environment:
+#       - PYTHON_ENV=development
+#     volumes:
+#       - ./module-services/claims-processing/app:/app/app:ro
