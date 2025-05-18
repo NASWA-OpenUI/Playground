@@ -29,12 +29,14 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
         onException(Exception.class)
             .handled(true)
             .log("❌ Error in route ${routeId}: ${exception.message}")
+            .log("❌ Full stack trace: ${exception.stacktrace}")
             .setHeader("Content-Type", constant("application/json"))
             .setHeader("CamelHttpResponseCode", constant(500))
             .setBody(simple("{" +
                 "\"error\": \"${exception.message}\"," +
                 "\"route\": \"${routeId}\"," +
                 "\"timestamp\": \"" + java.time.Instant.now() + "\"," +
+                "\"stackTrace\": \"${exception.stacktrace}\"," +
                 "\"details\": \"An error occurred in the integration service\"" +
                 "}"));
 
