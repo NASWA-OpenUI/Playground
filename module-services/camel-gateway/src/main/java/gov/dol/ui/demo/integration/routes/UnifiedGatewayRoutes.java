@@ -40,9 +40,7 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
 
         // Configure REST DSL - This is our API Gateway
         restConfiguration()
-            .component("jetty")
-            .host("0.0.0.0")
-            .port(8080)
+            .component("servlet")  // Use servlet instead of jetty
             .bindingMode(RestBindingMode.json)
             .dataFormatProperty("prettyPrint", "true")
             .enableCORS(true)
