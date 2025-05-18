@@ -201,19 +201,19 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
                 "                <h3>👤 Claimant Portal</h3>" +
                 "                <p>File and manage unemployment claims</p>" +
                 "                <div class='tech-stack'>Tech: React + GraphQL + MongoDB</div>" +
-                "                <p><a href='/claimant'>Access Portal →</a></p>" +
+                "                <p><a href='/camel/claimant'>Access Portal →</a></p>" +
                 "            </div>" +
                 "            <div class='service-card'>" +
                 "                <h3>⚙️ Claims Processing</h3>" +
                 "                <p>Administrative interface for processing claims</p>" +
                 "                <div class='tech-stack'>Tech: Vue.js + REST + PostgreSQL</div>" +
-                "                <p><a href='/processor'>Access Portal →</a></p>" +
+                "                <p><a href='/camel/processor'>Access Portal →</a></p>" +
                 "            </div>" +
                 "            <div class='service-card'>" +
                 "                <h3>🔗 Integration Monitoring</h3>" +
                 "                <p>Real-time view of protocol conversions</p>" +
                 "                <div class='tech-stack'>Tech: Apache Camel + Spring Boot</div>" +
-                "                <p><a href='/integration/api/v1/monitoring'>View Dashboard →</a></p>" +
+                "                <p><a href='/camel/integration/api/v1/monitoring'>View Dashboard →</a></p>" +
                 "            </div>" +
                 "        </div>" +
                 "        <div class='integration-info'>" +
@@ -225,8 +225,8 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
                 "                <li><strong>API Gateway:</strong> Unified entry point for all services</li>" +
                 "                <li><strong>Monitoring:</strong> Real-time visibility into all integrations</li>" +
                 "            </ul>" +
-                "            <p>📊 <a href='/integration/api/v1/routes'>View Integration Routes</a> | " +
-                "               ❤️ <a href='/integration/api/v1/health'>Service Health</a></p>" +
+                "            <p>📊 <a href='/camel/integration/api/v1/routes'>View Integration Routes</a> | " +
+                "               ❤️ <a href='/camel/integration/api/v1/health'>Service Health</a></p>" +
                 "        </div>" +
                 "    </div>" +
                 "</body>" +
