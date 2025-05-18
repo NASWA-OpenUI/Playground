@@ -25,6 +25,19 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
+        // Global error handling - MUST be defined before any routes
+        onException(Exception.class)
+            .handled(true)
+            .log("❌ Error in route ${routeId}: ${exception.message}")
+            .setHeader("Content-Type", constant("application/json"))
+            .setHeader("CamelHttpResponseCode", constant(500))
+            .setBody(simple("{" +
+                "\"error\": \"${exception.message}\"," +
+                "\"route\": \"${routeId}\"," +
+                "\"timestamp\": \"" + java.time.Instant.now() + "\"," +
+                "\"details\": \"An error occurred in the integration service\"" +
+                "}"));
+
         // Configure REST DSL - This is our API Gateway
         restConfiguration()
             .component("jetty")
@@ -530,18 +543,5 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
             .setHeader("Accept", constant("application/json"))
             .toD(claimantServiceUrl + "/graphql")
             .log("🔄 Response from Claimant Service: ${body}");
-
-        // Global error handling
-        onException(Exception.class)
-            .handled(true)
-            .log("❌ Error in route ${routeId}: ${exception.message}")
-            .setHeader("Content-Type", constant("application/json"))
-            .setHeader("CamelHttpResponseCode", constant(500))
-            .setBody(simple("{" +
-                "\"error\": \"${exception.message}\"," +
-                "\"route\": \"${routeId}\"," +
-                "\"timestamp\": \"" + java.time.Instant.now() + "\"," +
-                "\"details\": \"An error occurred in the integration service\"" +
-                "}"));
     }
 }
