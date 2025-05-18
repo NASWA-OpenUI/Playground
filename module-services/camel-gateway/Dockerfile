@@ -21,8 +21,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 # Create app directory
 WORKDIR /app
 
-# Copy the built jar from build stage
-COPY --from=build /app/target/camel-unified-gateway-1.0.0.jar app.jar
+# Copy the built jar from build stage (using correct artifact name from pom.xml)
+COPY --from=build /app/target/camel-integration-service-1.0.0.jar app.jar
 
 # Expose ports
 EXPOSE 8080
