@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Maven Wrapper Script
+# 
+# This file is used to download and run Maven when it's not installed locally
+
+if [ -r .mvn/wrapper/maven-wrapper.properties ]; then
+    . .mvn/wrapper/maven-wrapper.properties
+    MAVEN_OPTS="$MAVEN_OPTS $MAVEN_WRAPPER_OPTS"
+fi
+
+# Default to use Maven 3.8.6
+MAVEN_VERSION=${MAVEN_VERSION:-3.8.6}
+BASE_URL=${MAVEN_BASE_URL:-https://repo.maven.apache.org/maven2}
+
+# Download and cache Maven if not present
+MAVEN_WRAPPER_JAR_PATH=.mvn/wrapper/maven-wrapper.jar
+if [ ! -f "$MAVEN_WRAPPER_JAR_PATH" ]; then
+    echo "Downloading Maven wrapper..."
+    mkdir -p .mvn/wrapper
+    curl -o "$MAVEN_WRAPPER_JAR_PATH" "$BASE_URL/org/apache/maven/wrapper/maven-wrapper/3.1.0/maven-wrapper-3.1.0.jar"
+fi
+
+# Execute Maven
+exec java $MAVEN_OPTS -classpath "$MAVEN_WRAPPER_JAR_PATH" \
+    -Dmaven.multiModuleProjectDirectory="$PWD" \
+    org.apache.maven.wrapper.MavenWrapperMain "$@"

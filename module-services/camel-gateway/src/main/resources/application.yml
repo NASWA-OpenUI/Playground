@@ -1,0 +1,70 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: camel-unified-gateway
+  main:
+    allow-bean-definition-overriding: true
+
+# Camel Configuration
+camel:
+  springboot:
+    name: UIModernizationGateway
+    main-run-controller: true
+    jmx-enabled: true
+    endpoint-runtime-statistics-enabled: true
+    load-type-converters: true
+  component:
+    # Configure Jetty as the primary HTTP component for API Gateway
+    jetty:
+      use-global-ssl-context-parameters: false
+
+# Service URLs (internal communication)
+services:
+  claimant:
+    url: http://claimant-services:4000
+    graphql-endpoint: /graphql
+  claims-processing:
+    url: http://claims-processing:8000
+    api-endpoint: /api/claims
+
+# Management endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,camel,camelroutes
+      base-path: /management
+  endpoint:
+    health:
+      show-details: always
+    camel:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging configuration
+logging:
+  level:
+    gov.dol.ui.demo: DEBUG
+    org.apache.camel: INFO
+    org.apache.camel.component.http: DEBUG
+    org.apache.camel.component.jetty: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%logger{36}] - %msg%n"
+
+# Application info
+info:
+  app:
+    name: UI Modernization Demo - Unified Gateway
+    description: Apache Camel-based API Gateway and Integration Service
+    version: 1.0.0
+    features:
+      - API Gateway (replaces Traefik)
+      - Protocol Conversion (GraphQL ↔ REST)
+      - Data Transformation (MongoDB ↔ PostgreSQL)
+      - Real-time Monitoring
+      - Integration Dashboard
