@@ -54,7 +54,7 @@ services:
   claimant-ui:
     build: ./module-services/claimant-services/claimant
     ports:
-      - "3001:80"    # External port 3001, internal port 80
+      - "3001:80"
     depends_on:
       - claimant-services
     labels:
