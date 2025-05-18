@@ -15,10 +15,13 @@ camel:
     jmx-enabled: true
     endpoint-runtime-statistics-enabled: true
     load-type-converters: true
+  servlet:
+    mapping:
+      context-path: /camel/*
   component:
-    # Configure Jetty as the primary HTTP component for API Gateway
-    jetty:
-      use-global-ssl-context-parameters: false
+    servlet:
+      mapping:
+        context-path: /camel/*
 
 # Service URLs (internal communication)
 services:
