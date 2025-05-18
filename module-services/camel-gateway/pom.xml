@@ -136,7 +136,7 @@
                 <executions>
                     <execution>
                         <goals>
-                            <goal>rewrite</goal>
+                            <goal>repackage</goal>
                         </goals>
                     </execution>
                 </executions>
