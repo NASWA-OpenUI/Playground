@@ -164,68 +164,62 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
             .routeId("serve-main-ui")
             .log("📄 Serving main demo UI")
             .setHeader("Content-Type", constant("text/html"))
-            .setBody(constant("""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>UI Modernization Demo</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-                        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
-                        .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }
-                        .service-card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9; }
-                        .service-card h3 { color: #3498db; margin-top: 0; }
-                        .service-card a { color: #e74c3c; text-decoration: none; font-weight: bold; }
-                        .service-card a:hover { text-decoration: underline; }
-                        .integration-info { background: #ecf0f1; padding: 20px; border-radius: 8px; margin: 30px 0; }
-                        .tech-stack { font-size: 0.9em; color: #7f8c8d; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <h1>🚀 UI Modernization Demo</h1>
-                        <p>This demonstration showcases a modular unemployment insurance system with different services communicating through standardized interfaces.</p>
-                        
-                        <div class="services">
-                            <div class="service-card">
-                                <h3>👤 Claimant Portal</h3>
-                                <p>File and manage unemployment claims</p>
-                                <div class="tech-stack">Tech: React + GraphQL + MongoDB</div>
-                                <p><a href="/claimant">Access Portal →</a></p>
-                            </div>
-                            
-                            <div class="service-card">
-                                <h3>⚙️ Claims Processing</h3>
-                                <p>Administrative interface for processing claims</p>
-                                <div class="tech-stack">Tech: Vue.js + REST + PostgreSQL</div>
-                                <p><a href="/processor">Access Portal →</a></p>
-                            </div>
-                            
-                            <div class="service-card">
-                                <h3>🔗 Integration Monitoring</h3>
-                                <p>Real-time view of protocol conversions</p>
-                                <div class="tech-stack">Tech: Apache Camel + Spring Boot</div>
-                                <p><a href="/integration/api/v1/monitoring">View Dashboard →</a></p>
-                            </div>
-                        </div>
-                        
-                        <div class="integration-info">
-                            <h3>🔄 Integration Layer</h3>
-                            <p>All services communicate through Apache Camel, which handles:</p>
-                            <ul>
-                                <li><strong>Protocol Conversion:</strong> GraphQL ↔ REST ↔ (future gRPC)</li>
-                                <li><strong>Data Transformation:</strong> MongoDB format ↔ PostgreSQL format</li>
-                                <li><strong>API Gateway:</strong> Unified entry point for all services</li>
-                                <li><strong>Monitoring:</strong> Real-time visibility into all integrations</li>
-                            </ul>
-                            <p>📊 <a href="/integration/api/v1/routes">View Integration Routes</a> | 
-                               ❤️ <a href="/integration/api/v1/health">Service Health</a></p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """));
+            .setBody(constant("<!DOCTYPE html>" +
+                "<html>" +
+                "<head>" +
+                "    <title>UI Modernization Demo</title>" +
+                "    <style>" +
+                "        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }" +
+                "        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }" +
+                "        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }" +
+                "        .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0; }" +
+                "        .service-card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #f9f9f9; }" +
+                "        .service-card h3 { color: #3498db; margin-top: 0; }" +
+                "        .service-card a { color: #e74c3c; text-decoration: none; font-weight: bold; }" +
+                "        .service-card a:hover { text-decoration: underline; }" +
+                "        .integration-info { background: #ecf0f1; padding: 20px; border-radius: 8px; margin: 30px 0; }" +
+                "        .tech-stack { font-size: 0.9em; color: #7f8c8d; }" +
+                "    </style>" +
+                "</head>" +
+                "<body>" +
+                "    <div class='container'>" +
+                "        <h1>🚀 UI Modernization Demo</h1>" +
+                "        <p>This demonstration showcases a modular unemployment insurance system with different services communicating through standardized interfaces.</p>" +
+                "        <div class='services'>" +
+                "            <div class='service-card'>" +
+                "                <h3>👤 Claimant Portal</h3>" +
+                "                <p>File and manage unemployment claims</p>" +
+                "                <div class='tech-stack'>Tech: React + GraphQL + MongoDB</div>" +
+                "                <p><a href='/claimant'>Access Portal →</a></p>" +
+                "            </div>" +
+                "            <div class='service-card'>" +
+                "                <h3>⚙️ Claims Processing</h3>" +
+                "                <p>Administrative interface for processing claims</p>" +
+                "                <div class='tech-stack'>Tech: Vue.js + REST + PostgreSQL</div>" +
+                "                <p><a href='/processor'>Access Portal →</a></p>" +
+                "            </div>" +
+                "            <div class='service-card'>" +
+                "                <h3>🔗 Integration Monitoring</h3>" +
+                "                <p>Real-time view of protocol conversions</p>" +
+                "                <div class='tech-stack'>Tech: Apache Camel + Spring Boot</div>" +
+                "                <p><a href='/integration/api/v1/monitoring'>View Dashboard →</a></p>" +
+                "            </div>" +
+                "        </div>" +
+                "        <div class='integration-info'>" +
+                "            <h3>🔄 Integration Layer</h3>" +
+                "            <p>All services communicate through Apache Camel, which handles:</p>" +
+                "            <ul>" +
+                "                <li><strong>Protocol Conversion:</strong> GraphQL ↔ REST ↔ (future gRPC)</li>" +
+                "                <li><strong>Data Transformation:</strong> MongoDB format ↔ PostgreSQL format</li>" +
+                "                <li><strong>API Gateway:</strong> Unified entry point for all services</li>" +
+                "                <li><strong>Monitoring:</strong> Real-time visibility into all integrations</li>" +
+                "            </ul>" +
+                "            <p>📊 <a href='/integration/api/v1/routes'>View Integration Routes</a> | " +
+                "               ❤️ <a href='/integration/api/v1/health'>Service Health</a></p>" +
+                "        </div>" +
+                "    </div>" +
+                "</body>" +
+                "</html>"));
 
         // Serve Claimant UI (placeholder - in real implementation, would serve React app)
         from("direct:serve-claimant-ui")
