@@ -15,7 +15,7 @@ public class CamelServletConfig {
     @Bean
     public ServletRegistrationBean<CamelHttpTransportServlet> camelServletRegistrationBean() {
         ServletRegistrationBean<CamelHttpTransportServlet> registration = 
-            new ServletRegistrationBean<>(new CamelHttpTransportServlet(), "/*");
+            new ServletRegistrationBean<>(new CamelHttpTransportServlet(), "/camel/*");
         
         registration.setName("CamelServlet");
         registration.setLoadOnStartup(1);
