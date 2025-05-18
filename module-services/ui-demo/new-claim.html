@@ -794,21 +794,56 @@
           }
         };
         
-        // For demo purposes, we'll simulate a successful submission
-        console.log('Simulating successful submission for demo');
-        console.log('Claim data:', claimData);
+// Prepare GraphQL mutation
+        const mutation = {
+          query: `
+            mutation SubmitClaim($input: ClaimInput!) {
+              submitClaim(input: $input) {
+                claim {
+                  claimId
+                  status
+                }
+                success
+                message
+              }
+            }
+          `,
+          variables: {
+            input: claimData
+          }
+        };
         
-        // Short delay to simulate processing
-        setTimeout(() => {
-          // Show success step
-          hideStep(currentStep);
-          currentStep = 5;
-          showStep(currentStep);
-          
-          // Generate a random claim reference number
-          const claimReference = document.getElementById('claim-reference');
-          claimReference.textContent = 'CL-' + Math.floor(10000 + Math.random() * 90000);
-        }, 1500);
+        console.log('Sending claim data to backend:', claimData);
+        
+        // Using absolute URL with window.location.origin
+        const response = await fetch(window.location.origin + '/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(mutation)
+        });
+        
+        const responseData = await response.json();
+        console.log('Response from server:', responseData);
+        
+        if (responseData.errors) {
+          throw new Error(responseData.errors[0].message || 'Error submitting claim');
+        }
+        
+        if (!responseData.data || !responseData.data.submitClaim.success) {
+          throw new Error(responseData.data?.submitClaim?.message || 'Failed to submit claim');
+        }
+        
+        // Show success step
+        hideStep(currentStep);
+        currentStep = 5;
+        showStep(currentStep);
+        
+        // Set the claim reference number from the response
+        const claimReference = document.getElementById('claim-reference');
+        claimReference.textContent = responseData.data.submitClaim.claim.claimId || 'CL-' + Math.floor(10000 + Math.random() * 90000);
         
       } catch (error) {
         console.log('Error submitting claim:', error);
