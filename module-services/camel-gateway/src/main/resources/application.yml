@@ -17,11 +17,11 @@ camel:
     load-type-converters: true
   servlet:
     mapping:
-      context-path: /camel/*
+      context-path: /*
   component:
     servlet:
       mapping:
-        context-path: /camel/*
+        context-path: /*
 
 # Service URLs (internal communication)
 services:
@@ -56,6 +56,8 @@ logging:
     org.apache.camel: INFO
     org.apache.camel.component.http: DEBUG
     org.apache.camel.component.jetty: INFO
+    org.apache.camel.processor: DEBUG
+    root: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%logger{36}] - %msg%n"
 
