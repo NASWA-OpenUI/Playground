@@ -1,4 +1,18 @@
-# Apache Camel Unified Gateway - Dockerfile
+# Simplified Dockerfile using Maven directly
+FROM maven:3.8.6-openjdk-11-slim AS build
+
+# Set working directory
+WORKDIR /app
+
+# Copy pom.xml and download dependencies (for better caching)
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy source code and build
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Runtime stage
 FROM openjdk:11-jre-slim
 
 # Install curl for health checks
@@ -7,25 +21,8 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 # Create app directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first (for better Docker layer caching)
-COPY mvnw .
-COPY mvnw.cmd .
-COPY pom.xml .
-
-# Create .mvn/wrapper directory and download maven-wrapper.jar if needed
-RUN mkdir -p .mvn/wrapper
-
-# Make maven wrapper executable
-RUN chmod +x ./mvnw
-
-# Download dependencies (this layer will be cached unless pom.xml changes)
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
-
-# Build the application
-RUN ./mvnw clean package -DskipTests
+# Copy the built jar from build stage
+COPY --from=build /app/target/camel-unified-gateway-1.0.0.jar app.jar
 
 # Expose ports
 EXPOSE 8080
@@ -37,4 +34,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/integration/api/v1/health || exit 1
 
 # Run the application
-CMD ["java", "-jar", "target/camel-unified-gateway-1.0.0.jar"]
+CMD ["java", "-jar", "app.jar"]
