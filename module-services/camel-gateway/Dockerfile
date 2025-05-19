@@ -9,13 +9,9 @@ WORKDIR /opt/camel
 # Copy the project files
 COPY pom.xml .
 COPY src ./src
-COPY routes ./routes
 
 # Build the application
 RUN mvn clean compile
-
-# Install dependencies for building the health dashboard
-RUN apt-get install -y curl
 
 # Expose ports
 EXPOSE 8080 8081
