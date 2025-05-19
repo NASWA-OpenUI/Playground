@@ -15,36 +15,53 @@
 
         function updateDashboard() {
             fetch('/api/health/services')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     updateStatusBar(data);
                     updateServicesGrid(data.services);
                     lastUpdateTime = new Date();
-                    document.getElementById('last-updated-time').textContent = 
-                        `Last updated: ${lastUpdateTime.toLocaleTimeString()}`;
+                    const lastUpdatedElement = document.getElementById('last-updated-time');
+                    if (lastUpdatedElement) {
+                        lastUpdatedElement.textContent = `Last updated: ${lastUpdateTime.toLocaleTimeString()}`;
+                    }
                 })
                 .catch(error => {
                     console.error('Error fetching status:', error);
-                    document.getElementById('services-container').innerHTML = `
-                        <div class="loading">
-                            <h3>Unable to connect to health monitoring</h3>
-                            <p>Error: ${error.message}</p>
-                        </div>
-                    `;
+                    const container = document.getElementById('services-container');
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="loading">
+                                <h3>Unable to connect to health monitoring</h3>
+                                <p>Error: ${error.message}</p>
+                            </div>
+                        `;
+                    }
                 });
         }
 
         function updateStatusBar(data) {
-            document.getElementById('camel-status').textContent = data.camelStatus || 'UNKNOWN';
-            document.getElementById('active-connections').textContent = data.activeConnections || 0;
-            document.getElementById('total-services').textContent = Object.keys(data.services || {}).length;
+            const camelStatusElement = document.getElementById('camel-status');
+            const activeConnectionsElement = document.getElementById('active-connections');
+            const totalServicesElement = document.getElementById('total-services');
+            const lastCheckElement = document.getElementById('last-check');
+
+            if (camelStatusElement) camelStatusElement.textContent = data.camelStatus || 'UNKNOWN';
+            if (activeConnectionsElement) activeConnectionsElement.textContent = data.activeConnections || 0;
+            if (totalServicesElement) totalServicesElement.textContent = Object.keys(data.services || {}).length;
             
-            const now = new Date();
-            document.getElementById('last-check').textContent = now.toLocaleTimeString('en-US', {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            if (lastCheckElement) {
+                const now = new Date();
+                lastCheckElement.textContent = now.toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
         }
 
         function updateServicesGrid(services) {
