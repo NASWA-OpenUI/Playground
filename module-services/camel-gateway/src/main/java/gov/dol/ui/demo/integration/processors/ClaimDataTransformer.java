@@ -13,7 +13,7 @@ import java.util.Map;
  * Uses basic string manipulation and Camel's built-in JSON support
  */
 @Component("claimDataTransformer")
-public class SimplifiedClaimDataTransformer implements Processor {
+public class ClaimDataTransformer implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception {
