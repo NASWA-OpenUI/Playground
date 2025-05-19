@@ -18,7 +18,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <camel.version>3.20.7</camel.version>
         <spring.boot.version>2.7.14</spring.boot.version>
-        <jackson.version>2.15.2</jackson.version>
+        <jackson.version>2.13.5</jackson.version>
     </properties>
 
     <dependencyManagement>
