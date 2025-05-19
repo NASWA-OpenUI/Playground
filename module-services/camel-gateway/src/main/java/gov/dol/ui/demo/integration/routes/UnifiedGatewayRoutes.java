@@ -518,7 +518,7 @@ public class UnifiedGatewayRoutes extends RouteBuilder {
             .removeHeaders("CamelHttp*")
             .setHeader("Content-Type", constant("application/json"))
             .setHeader("Accept", constant("application/json"))
-            .toD(claimsProcessingUrl + "/api/claims")
+            .toD(claimsProcessingUrl + "/api/claims/")
             .log("🔄 Response from Claims Processing: ${body}");
 
         // Transform REST response (reuse existing processor)
