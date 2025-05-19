@@ -1,7 +1,6 @@
 package com.playground.camel.routes;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.rest.RestBindingMode;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -10,19 +9,6 @@ public class IntegrationRoutes extends RouteBuilder {
     @Override
     public void configure() throws Exception {
         
-        // Configure REST DSL
-        restConfiguration()
-            .component("http")
-            .port(8080)
-            .bindingMode(RestBindingMode.json)
-            .enableCORS(true);
-
-        // REST endpoint for receiving GraphQL-style submissions
-        rest("/api/submit")
-            .consumes("application/json")
-            .produces("application/json")
-            .post().to("direct:processSubmission");
-
         // Main processing route - converts GraphQL/JSON to REST/XML
         from("direct:processSubmission")
             .routeId("submission-processor")
@@ -64,10 +50,7 @@ public class IntegrationRoutes extends RouteBuilder {
             .bean("healthMonitor", "checkAllServices")
             .log("Health check completed");
 
-        // Route for dashboard to get current status
-        rest("/api/health")
-            .get("/services").to("direct:getServiceStatus");
-
+        // Route for getting service status (called by Spring controller)
         from("direct:getServiceStatus")
             .routeId("service-status-getter")
             .bean("healthMonitor", "getCurrentStatus")
