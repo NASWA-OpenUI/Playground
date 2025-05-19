@@ -12,7 +12,7 @@ public class IntegrationRoutes extends RouteBuilder {
         
         // Configure REST DSL
         restConfiguration()
-            .component("servlet")
+            .component("http")
             .port(8080)
             .bindingMode(RestBindingMode.json)
             .enableCORS(true);
