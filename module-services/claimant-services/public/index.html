@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Modernization - Claimant Services</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                    <style>
+                        .primary { fill: #2c3e50; }
+                        .secondary { fill: #3498db; }
+                    </style>
+                    <circle cx="60" cy="60" r="50" fill="white" stroke="#3498db" stroke-width="4"/>
+                    <text x="60" y="70" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" class="primary">UI</text>
+                    <path d="M40 40 L30 25 M80 40 L90 25 M40 80 L30 95 M80 80 L90 95" stroke="#3498db" stroke-width="3" fill="none"/>
+                    <circle cx="30" cy="25" r="6" class="secondary"/>
+                    <circle cx="90" cy="25" r="6" class="secondary"/>
+                    <circle cx="30" cy="95" r="6" class="secondary"/>
+                    <circle cx="90" cy="95" r="6" class="secondary"/>
+                </svg>
+                <h1>Claimant Services Portal</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#submit-claim">Submit Claim</a></li>
+                    <li><a href="#claim-status">Check Status</a></li>
+                    <li><a href="/graphql" target="_blank">API</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+	<!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-container">
+                <h1>Unemployment Insurance Claims</h1>
+                <p>Submit your unemployment insurance claim quickly and securely through our modernized platform.</p>
+            </div>
+        </section>
+
+        <!-- Notification Area -->
+        <div id="notification" class="notification" style="display: none;">
+            <div class="notification-content">
+                <span id="notification-message"></span>
+                <button id="notification-close" class="notification-close">&times;</button>
+            </div>
+        </div>
+
+        <!-- Claim Form Section -->
+        <section id="submit-claim" class="claim-form-section">
+            <div class="container">
+                <div class="form-container">
+                    <div class="form-header">
+                        <h2>Submit Unemployment Insurance Claim</h2>
+                        <p>Please provide accurate information for your unemployment insurance claim.</p>
+                    </div>
+
+                    <form id="claimForm" class="claim-form">
+					<!-- Personal Information -->
+                        <div class="form-section">
+                            <h3>Personal Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="firstName">First Name *</label>
+                                    <input type="text" id="firstName" name="firstName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastName">Last Name *</label>
+                                    <input type="text" id="lastName" name="lastName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="ssn">Social Security Number *</label>
+                                    <input type="text" id="ssn" name="ssn" placeholder="XXX-XX-XXXX" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateOfBirth">Date of Birth *</label>
+                                    <input type="date" id="dateOfBirth" name="dateOfBirth" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email Address *</label>
+                                    <input type="email" id="email" name="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone Number *</label>
+                                    <input type="tel" id="phone" name="phone" required>
+                                </div>
+                            </div>
+                        </div>
+				<!-- Address Information -->
+                        <div class="form-section">
+                            <h3>Address Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label for="street">Street Address *</label>
+                                    <input type="text" id="street" name="address.street" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="city">City *</label>
+                                    <input type="text" id="city" name="address.city" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="state">State *</label>
+                                    <select id="state" name="address.state" required>
+                                        <option value="">Select State</option>
+                                        <option value="AL">Alabama</option>
+                                        <option value="AK">Alaska</option>
+                                        <option value="AZ">Arizona</option>
+                                        <option value="AR">Arkansas</option>
+                                        <option value="CA">California</option>
+                                        <option value="CO">Colorado</option>
+                                        <option value="CT">Connecticut</option>
+                                        <option value="DE">Delaware</option>
+                                        <option value="FL">Florida</option>
+                                        <option value="GA">Georgia</option>
+                                        <!-- Add more states as needed -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="zipCode">ZIP Code *</label>
+                                    <input type="text" id="zipCode" name="address.zipCode" required>
+                                </div>
+                            </div>
+                        </div>
+				<!-- Employment Information -->
+                        <div class="form-section">
+                            <h3>Employment Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="employerName">Employer Name *</label>
+                                    <input type="text" id="employerName" name="employer.name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="employerEin">Employer EIN *</label>
+                                    <input type="text" id="employerEin" name="employer.ein" placeholder="XX-XXXXXXX" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="startDate">Employment Start Date *</label>
+                                    <input type="date" id="startDate" name="employmentDates.startDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="endDate">Employment End Date *</label>
+                                    <input type="date" id="endDate" name="employmentDates.endDate" required>
+                                </div>
+                            </div>
+
+                            <!-- Employer Address -->
+                            <h4>Employer Address</h4>
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label for="employerStreet">Street Address *</label>
+                                    <input type="text" id="employerStreet" name="employer.address.street" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="employerCity">City *</label>
+                                    <input type="text" id="employerCity" name="employer.address.city" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="employerState">State *</label>
+                                    <select id="employerState" name="employer.address.state" required>
+                                        <option value="">Select State</option>
+                                        <option value="AL">Alabama</option>
+                                        <option value="AK">Alaska</option>
+                                        <option value="AZ">Arizona</option>
+                                        <option value="AR">Arkansas</option>
+                                        <option value="CA">California</option>
+                                        <option value="CO">Colorado</option>
+                                        <option value="CT">Connecticut</option>
+                                        <option value="DE">Delaware</option>
+                                        <option value="FL">Florida</option>
+                                        <option value="GA">Georgia</option>
+                                        <!-- Add more states as needed -->
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="employerZipCode">ZIP Code *</label>
+                                    <input type="text" id="employerZipCode" name="employer.address.zipCode" required>
+                                </div>
+                            </div>
+                        </div>
+				<!-- Separation Information -->
+                        <div class="form-section">
+                            <h3>Separation Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="separationReason">Reason for Separation *</label>
+                                    <select id="separationReason" name="separationReason" required>
+                                        <option value="">Select Reason</option>
+                                        <option value="laid_off">Laid Off</option>
+                                        <option value="terminated">Terminated</option>
+                                        <option value="quit">Quit</option>
+                                        <option value="contract_ended">Contract Ended</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="separationDetails">Additional Details</label>
+                                    <textarea id="separationDetails" name="separationDetails" rows="3" maxlength="500" placeholder="Please provide additional details about your separation (optional)"></textarea>
+                                </div>
+                            </div>
+                        </div>
+				<!-- Wage Information -->
+                        <div class="form-section">
+                            <h3>Wage Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="lastQuarterEarnings">Last Quarter Earnings *</label>
+                                    <input type="number" id="lastQuarterEarnings" name="wageData.lastQuarterEarnings" min="0" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="annualEarnings">Annual Earnings *</label>
+                                    <input type="number" id="annualEarnings" name="wageData.annualEarnings" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="button primary submit-btn">
+                                <span id="submit-text">Submit Claim</span>
+                                <span id="submit-loading" style="display: none;">Submitting...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>	
+				<!-- Claim Status Section -->
+        <section id="claim-status" class="status-section">
+            <div class="container">
+                <div class="status-container" style="display: none;">
+                    <div class="status-header">
+                        <h2>Claim Status</h2>
+                        <p>Track the progress of your unemployment insurance claim.</p>
+                    </div>
+                    
+                    <div id="claim-details" class="claim-details">
+                        <!-- Claim details will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+	<!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2025 UI Modernization Demo - Claimant Services</p>
+                <div class="footer-links">
+                    <a href="#submit-claim">Submit Claim</a>
+                    <a href="#claim-status">Check Status</a>
+                    <a href="/health">Service Health</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
