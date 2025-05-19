@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   camel-gateway:
     build: ./module-services/camel-gateway
