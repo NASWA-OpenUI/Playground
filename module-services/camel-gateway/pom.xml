@@ -35,16 +35,10 @@
             <artifactId>camel-spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- Camel HTTP Components -->
+        <!-- Camel HTTP Components for outbound calls -->
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-http-starter</artifactId>
-        </dependency>
-
-        <!-- Camel REST DSL -->
-        <dependency>
-            <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-rest-starter</artifactId>
         </dependency>
 
         <!-- Camel Jackson for JSON processing -->
