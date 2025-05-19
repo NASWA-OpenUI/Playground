@@ -100,15 +100,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const demoLinks = document.querySelectorAll('.step a');
     demoLinks.forEach(link => {
         const text = link.textContent.toLowerCase();
-        if (text.includes('claimant portal')) {
-            link.href = buildServiceUrl(3001, '/');
-            link.target = '_blank';
-        } else if (text.includes('api gateway') || text.includes('gateway dashboard')) {
-            link.href = buildServiceUrl(8080, '/camel/integration/api/v1/monitoring');
-            link.target = '_blank';
-        } else if (text.includes('claims processor')) {
-            link.href = buildServiceUrl(3002, '/');
-            link.target = '_blank';
+        const currentHref = link.getAttribute('href');
+        
+        // Only update links that don't already have full URLs
+        if (!currentHref.startsWith('http')) {
+            if (text.includes('claimant portal')) {
+                link.href = buildServiceUrl(3001, '/');
+                link.target = '_blank';
+            } else if (text.includes('api gateway') || text.includes('gateway dashboard')) {
+                link.href = buildServiceUrl(8080, '/camel/integration/api/v1/monitoring');
+                link.target = '_blank';
+            } else if (text.includes('claims processor')) {
+                link.href = buildServiceUrl(3002, '/');
+                link.target = '_blank';
+            }
         }
     });
     
