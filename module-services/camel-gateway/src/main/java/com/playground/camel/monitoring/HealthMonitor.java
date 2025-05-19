@@ -12,9 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HealthMonitor {
 
     private final Map<String, ServiceStatus> serviceStatuses = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public HealthMonitor() {
+    // Inject Spring's auto-configured ObjectMapper
+    public HealthMonitor(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
         // Initialize with placeholder services that we'll connect to later
         initializePlaceholderServices();
     }
@@ -77,6 +79,7 @@ public class HealthMonitor {
         status.put("activeConnections", countActiveConnections());
         status.put("services", serviceStatuses);
 
+        // Now this will use Spring's configured ObjectMapper with LocalDateTime support
         return objectMapper.writeValueAsString(status);
     }
 
