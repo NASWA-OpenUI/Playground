@@ -1,106 +1,19 @@
+version: '3.8'
+
 services:
-  # Apache Camel Unified Gateway (handles backend integration only)
   camel-gateway:
     build: ./module-services/camel-gateway
     ports:
-      - "8080:8080"   # Integration services only (not main entry point)
-      - "8778:8778"   # JMX monitoring port
-      - "9779:9779"   # Debug port (optional)
-    depends_on:
-      - claimant-services
-      - claims-processing
-      - mongodb
-      - postgres
+      - "8080:8080"  # Main Camel routes
+      - "8081:8081"  # Health dashboard
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SERVICES_CLAIMANT_URL=http://claimant-services:4000
-      - SERVICES_CLAIMS_PROCESSING_URL=http://claims-processing:8000
-
-  # === BACKEND SERVICES ===
-  
-  # Claimant Services (GraphQL API + MongoDB)
-  claimant-services:
-    build: ./module-services/claimant-services/server
-    ports:
-      - "4000:4000"
-    depends_on:
-      - mongodb
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/claimant
-      - NODE_ENV=production
-
-  # Claims Processing Service (REST API + PostgreSQL)
-  claims-processing:
-    build: ./module-services/claims-processing
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/claims
-      - PYTHON_ENV=production
-
-  # === FRONTEND SERVICES ===
-  
-  # Main UI (Demo Landing Page)
-  ui-demo:
-    build: ./module-services/ui-demo
-    ports:
-      - "80:80"      # Main entry point
-    labels:
-      - "description=Main demo landing page"
-
-  # Claimant UI (React)
-  claimant-ui:
-    build: ./module-services/claimant-services/claimant
-    ports:
-      - "3001:80"
-    depends_on:
-      - claimant-services
-    labels:
-      - "description=React claimant portal"
-
-  # Claims Processing UI  
-  claims-ui:
-    build: ./module-services/claims-processing/client
-    ports:
-      - "3002:80"
-    depends_on:
-      - claims-processing
-    labels:
-      - "description=Claims processing interface"
-
-  # === DATABASES ===
-  
-  # MongoDB (for Claimant Services)
-  mongodb:
-    image: mongo:6.0
-    ports:
-      - "27017:27017"
+      - CAMEL_HEALTH_CHECK_INTERVAL=30000
+      - CAMEL_LOG_LEVEL=INFO
     volumes:
-      - mongodb-data:/data/db
-    environment:
-      - MONGO_INITDB_DATABASE=claimant
-
-  # PostgreSQL (for Claims Processing)
-  postgres:
-    image: postgres:15
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=claims
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-
-volumes:
-  mongodb-data:
-    driver: local
-  postgres-data:
-    driver: local
+      - ./module-services/camel-gateway/routes:/opt/camel/routes
+    networks:
+      - camel-network
 
 networks:
-  default:
-    name: ui-modernization-demo
+  camel-network:
     driver: bridge

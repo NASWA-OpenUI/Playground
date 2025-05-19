@@ -1,0 +1,118 @@
+        <div id="services-container" class="services-grid">
+            <div class="loading pulse">
+                <h3>Loading service status...</h3>
+                <p>Connecting to health monitoring system</p>
+            </div>
+        </div>
+
+        <div class="last-updated">
+            <span id="last-updated-time">Never</span>
+        </div>
+    </div>
+
+    <script>
+        let lastUpdateTime = null;
+
+        function updateDashboard() {
+            fetch('/api/health/services')
+                .then(response => response.json())
+                .then(data => {
+                    updateStatusBar(data);
+                    updateServicesGrid(data.services);
+                    lastUpdateTime = new Date();
+                    document.getElementById('last-updated-time').textContent = 
+                        `Last updated: ${lastUpdateTime.toLocaleTimeString()}`;
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    document.getElementById('services-container').innerHTML = `
+                        <div class="loading">
+                            <h3>Unable to connect to health monitoring</h3>
+                            <p>Error: ${error.message}</p>
+                        </div>
+                    `;
+                });
+        }
+
+        function updateStatusBar(data) {
+            document.getElementById('camel-status').textContent = data.camelStatus || 'UNKNOWN';
+            document.getElementById('active-connections').textContent = data.activeConnections || 0;
+            document.getElementById('total-services').textContent = Object.keys(data.services || {}).length;
+            
+            const now = new Date();
+            document.getElementById('last-check').textContent = now.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function updateServicesGrid(services) {
+            if (!services || Object.keys(services).length === 0) {
+                document.getElementById('services-container').innerHTML = `
+                    <div class="loading">
+                        <h3>No services registered yet</h3>
+                        <p>Services will appear here as they connect to the gateway</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const servicesHtml = Object.values(services).map(service => {
+                const healthClass = service.health.toLowerCase().replace('_', '-');
+                const lastChecked = service.lastChecked ? 
+                    new Date(service.lastChecked).toLocaleString() : 'Never';
+
+                return `
+                    <div class="service-card ${healthClass}">
+                        <div class="service-header">
+                            <div class="service-name">${service.name}</div>
+                            <div class="service-status ${healthClass}">${service.health.replace('_', ' ')}</div>
+                        </div>
+                        <div class="service-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Technology</div>
+                                <div class="detail-value">${service.technology}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Protocol</div>
+                                <div class="detail-value">${service.protocol}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Endpoint</div>
+                                <div class="detail-value">${service.endpoint}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Last Checked</div>
+                                <div class="detail-value">${lastChecked}</div>
+                            </div>
+                        </div>
+                        <div class="service-message">
+                            ${service.message || 'No additional information'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('services-container').innerHTML = servicesHtml;
+        }
+
+        // Initial load
+        updateDashboard();
+
+        // Update every 30 seconds
+        setInterval(updateDashboard, 30000);
+
+        // Add some visual feedback when updating
+        setInterval(() => {
+            const statusItems = document.querySelectorAll('.status-value');
+            statusItems.forEach(item => {
+                item.style.opacity = '0.6';
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                }, 200);
+            });
+        }, 30000);
+    </script>
+</body>
+</html>
