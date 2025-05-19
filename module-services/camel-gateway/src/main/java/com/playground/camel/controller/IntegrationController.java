@@ -1,5 +1,6 @@
 package com.playground.camel.controller;
 
+import com.playground.camel.monitoring.HealthMonitor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,9 @@ public class IntegrationController {
 
     @Autowired
     private ProducerTemplate producerTemplate;
+
+    @Autowired
+    private HealthMonitor healthMonitor;
 
     @PostMapping(value = "/submit", 
                 consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -44,13 +48,14 @@ public class IntegrationController {
     @GetMapping(value = "/health/services", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getServiceHealth() {
         try {
-            // Get the current service status from our Camel route
-            String status = producerTemplate.requestBody("direct:getServiceStatus", "", String.class);
+            // Get the current service status directly from HealthMonitor (no Camel route)
+            String status = healthMonitor.getCurrentStatus();
             
             return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(status);
         } catch (Exception e) {
+            e.printStackTrace(); // This will show in the logs
             String errorResponse = String.format(
                 "{\"error\": \"Health check failed\", \"message\": \"%s\", \"timestamp\": \"%s\"}", 
                 e.getMessage(), 
@@ -80,6 +85,7 @@ public class IntegrationController {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(healthInfo);
         } catch (Exception e) {
+            e.printStackTrace(); // This will show in the logs
             String errorResponse = String.format(
                 "{\"error\": \"Camel health check failed\", \"message\": \"%s\", \"timestamp\": \"%s\"}", 
                 e.getMessage(), 
