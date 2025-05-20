@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +18,8 @@ import java.util.Optional;
 @RequestMapping("/api/interfaces")
 @CrossOrigin(origins = "*")
 public class InterfaceController {
+
+    private static final Logger logger = LoggerFactory.getLogger(InterfaceController.class);
 
     @Autowired
     private InterfaceConfigService interfaceService;
@@ -67,7 +72,7 @@ public class InterfaceController {
                 return ResponseEntity.noContent().<Void>build();
             })
             .orElseGet(() -> ResponseEntity.notFound().build());
-}
+    }
 
     @PostMapping("/{id}/activate")
     public ResponseEntity<Void> activateInterface(@PathVariable Long id) {
