@@ -80,4 +80,108 @@ public class DynamicRouteService {
                 String protocol = config.getProtocol();
                 
                 // Create route based on protocol
-                switch (protocol.toUpperCa
+                switch (protocol.toUpperCase()) {
+                    case "REST":
+                        configureRestRoute(config, routeId);
+                        break;
+                    case "SOAP":
+                        configureSoapRoute(config, routeId);
+                        break;
+                    case "GRAPHQL":
+                        configureGraphQLRoute(config, routeId);
+                        break;
+                    case "GRPC":
+                        configureGrpcRoute(config, routeId);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unsupported protocol: " + protocol);
+                }
+            }
+            
+            private void configureRestRoute(InterfaceConfig config, String routeId) {
+                // Parse template JSON for configuration details
+                Map<String, Object> templateConfig = parseTemplate(config.getTemplate());
+                String path = (String) templateConfig.getOrDefault("path", config.getEndpoint());
+                
+                // Create a basic REST endpoint
+                RouteDefinition route = rest(path)
+                    .id(routeId)
+                    .consumes("application/json")
+                    .produces("application/json");
+                
+                // Add supported methods
+                if (templateConfig.containsKey("methods")) {
+                    @SuppressWarnings("unchecked")
+                    Iterable<String> methods = (Iterable<String>) templateConfig.get("methods");
+                    for (String method : methods) {
+                        switch (method.toUpperCase()) {
+                            case "GET":
+                                route.get().to("direct:processApiRequest");
+                                break;
+                            case "POST":
+                                route.post().to("direct:processApiRequest");
+                                break;
+                            case "PUT":
+                                route.put().to("direct:processApiRequest");
+                                break;
+                            case "DELETE":
+                                route.delete().to("direct:processApiRequest");
+                                break;
+                        }
+                    }
+                } else {
+                    // Default to GET and POST if not specified
+                    route.get().to("direct:processApiRequest");
+                    route.post().to("direct:processApiRequest");
+                }
+                
+                // Add a processing route that logs and echoes the data
+                from("direct:processApiRequest")
+                    .routeId(routeId + "-processor")
+                    .log("Received request on interface: " + config.getName())
+                    .transform().simple("{ \"status\": \"success\", \"message\": \"Request received on interface: " + config.getName() + "\", \"endpoint\": \"" + config.getEndpoint() + "\" }");
+            }
+            
+            private void configureSoapRoute(InterfaceConfig config, String routeId) {
+                // Basic SOAP endpoint - in a real implementation we would use the template for more configuration
+                from("spring-ws:rootqname:{http://example.org/}request?endpointMapping=#wsEndpointMapping")
+                    .routeId(routeId)
+                    .log("Received SOAP request on interface: " + config.getName())
+                    .transform().simple("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n" +
+                        "  <soap:Body>\n" +
+                        "    <response xmlns=\"http://example.org/\">\n" +
+                        "      <status>success</status>\n" +
+                        "      <message>Request received on SOAP interface: " + config.getName() + "</message>\n" +
+                        "    </response>\n" +
+                        "  </soap:Body>\n" +
+                        "</soap:Envelope>");
+            }
+            
+            private void configureGraphQLRoute(InterfaceConfig config, String routeId) {
+                // Basic GraphQL endpoint
+                from("graphql://" + config.getEndpoint() + "?queryFile=schema.graphqls")
+                    .routeId(routeId)
+                    .log("Received GraphQL request on interface: " + config.getName())
+                    .setBody(constant("{ \"data\": { \"status\": \"success\", \"message\": \"GraphQL request received\" } }"));
+            }
+            
+            private void configureGrpcRoute(InterfaceConfig config, String routeId) {
+                // Basic gRPC endpoint
+                from("grpc://0.0.0.0:50051/com.example.HelloService?synchronous=true")
+                    .routeId(routeId)
+                    .log("Received gRPC request on interface: " + config.getName())
+                    .setBody(constant("gRPC response: Hello from Camel Gateway"));
+            }
+        };
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseTemplate(String template) {
+        try {
+            return objectMapper.readValue(template, HashMap.class);
+        } catch (Exception e) {
+            // Return empty map if template can't be parsed
+            return new HashMap<>();
+        }
+    }
+}
