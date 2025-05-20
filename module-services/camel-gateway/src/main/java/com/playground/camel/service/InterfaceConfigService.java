@@ -1,64 +1,82 @@
-package com.playground.camel.service;
+package com.playground.camel.controller;
 
 import com.playground.camel.model.InterfaceConfig;
-import com.playground.camel.repository.InterfaceConfigRepository;
+import com.playground.camel.service.InterfaceConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Service
-public class InterfaceConfigService {
+@RestController
+@RequestMapping("/api/interfaces")
+@CrossOrigin(origins = "*")
+public class InterfaceController {
 
     @Autowired
-    private InterfaceConfigRepository repository;
+    private InterfaceConfigService interfaceService;
 
-    public List<InterfaceConfig> getAllInterfaces() {
-        return repository.findAll();
+    @GetMapping
+    public ResponseEntity<List<InterfaceConfig>> getAllInterfaces() {
+        return ResponseEntity.ok(interfaceService.getAllInterfaces());
     }
 
-    public List<InterfaceConfig> getActiveInterfaces() {
-        return repository.findByActive(true);
+    @GetMapping("/{id}")
+    public ResponseEntity<InterfaceConfig> getInterfaceById(@PathVariable Long id) {
+        Optional<InterfaceConfig> config = interfaceService.getInterfaceById(id);
+        return config.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    public Optional<InterfaceConfig> getInterfaceById(Long id) {
-        return repository.findById(id);
+    @PostMapping
+    public ResponseEntity<InterfaceConfig> createInterface(@RequestBody InterfaceConfig config) {
+        InterfaceConfig created = interfaceService.createInterface(config);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    public Optional<InterfaceConfig> getInterfaceByName(String name) {
-        return repository.findByName(name);
+    @PutMapping("/{id}")
+    public ResponseEntity<InterfaceConfig> updateInterface(
+            @PathVariable Long id,
+            @RequestBody InterfaceConfig config) {
+        
+        return interfaceService.getInterfaceById(id)
+                .map(existing -> {
+                    config.setId(id);
+                    InterfaceConfig updated = interfaceService.updateInterface(config);
+                    return ResponseEntity.ok(updated);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    public InterfaceConfig createInterface(InterfaceConfig config) {
-        config.setCreationDate(LocalDateTime.now());
-        config.setLastModified(LocalDateTime.now());
-        return repository.save(config);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteInterface(@PathVariable Long id) {
+        return interfaceService.getInterfaceById(id)
+                .map(existing -> {
+                    interfaceService.deleteInterface(id);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    public InterfaceConfig updateInterface(InterfaceConfig config) {
-        config.setLastModified(LocalDateTime.now());
-        return repository.save(config);
+    @PostMapping("/{id}/activate")
+    public ResponseEntity<Void> activateInterface(@PathVariable Long id) {
+        return interfaceService.getInterfaceById(id)
+                .map(existing -> {
+                    interfaceService.activateInterface(id);
+                    return ResponseEntity.ok().<Void>build();
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    public void deleteInterface(Long id) {
-        repository.deleteById(id);
-    }
-
-    public void activateInterface(Long id) {
-        repository.findById(id).ifPresent(config -> {
-            config.setActive(true);
-            config.setLastModified(LocalDateTime.now());
-            repository.save(config);
-        });
-    }
-
-    public void deactivateInterface(Long id) {
-        repository.findById(id).ifPresent(config -> {
-            config.setActive(false);
-            config.setLastModified(LocalDateTime.now());
-            repository.save(config);
-        });
+    @PostMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateInterface(@PathVariable Long id) {
+        return interfaceService.getInterfaceById(id)
+                .map(existing -> {
+                    interfaceService.deactivateInterface(id);
+                    return ResponseEntity.ok().<Void>build();
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }
