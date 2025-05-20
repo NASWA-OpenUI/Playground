@@ -220,12 +220,6 @@ function collectFormData() {
     data.employer = {
         name: formData.get('employer.name'),
         ein: formData.get('employer.ein'),
-        address: {
-            street: formData.get('employer.address.street'),
-            city: formData.get('employer.address.city'),
-            state: formData.get('employer.address.state'),
-            zipCode: formData.get('employer.address.zipCode')
-        }
     };
     
     // Employment dates
