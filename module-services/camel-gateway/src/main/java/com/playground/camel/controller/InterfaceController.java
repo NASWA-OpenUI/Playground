@@ -19,9 +19,6 @@ public class InterfaceController {
     private InterfaceConfigService interfaceService;
 
     @Autowired
-    private InterfaceConfigService interfaceService;
-
-    @Autowired
     private DynamicRouteService routeService;
     
     @GetMapping
