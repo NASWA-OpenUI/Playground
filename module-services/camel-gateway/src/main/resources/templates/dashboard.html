@@ -82,6 +82,68 @@
             margin: 2rem 0;
         }
 
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: #4c6ef5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3b5bdb;
+        }
+
+        .btn-success {
+            background: #40c057;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #2b9348;
+        }
+
+        .btn-danger {
+            background: #fa5252;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e03131;
+        }
+
+        .btn-secondary {
+            background: #adb5bd;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #868e96;
+        }
+
         .service-card {
             background: white;
             border-radius: 10px;
@@ -230,6 +292,140 @@
             margin-top: 3rem;
         }
 
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 700px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: #4c6ef5;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.2);
+        }
+
+        .text-area {
+            min-height: 120px;
+            font-family: monospace;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            gap: 1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 0.5rem;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .interface-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .tab-container {
+            margin-top: 2rem;
+        }
+
+        .tab-nav {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            color: #4c6ef5;
+            border-bottom-color: #4c6ef5;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -249,171 +445,11 @@
             .container {
                 padding: 0 0.5rem;
             }
+            
+            .modal-content {
+                width: 95%;
+                margin: 5% auto;
+            }
         }
     </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Apache Camel Integration Hub</h1>
-        <p>Real-time Service Health Monitoring Dashboard</p>
-    </div>
-
-    <div class="status-bar">
-        <div class="status-item">
-            <div class="status-label">Camel Gateway</div>
-            <div class="status-value" id="camel-status">LOADING</div>
-        </div>
-        <div class="status-item">
-            <div class="status-label">Active Connections</div>
-            <div class="status-value" id="active-connections">-</div>
-        </div>
-        <div class="status-item">
-            <div class="status-label">Registered Services</div>
-            <div class="status-value" id="total-services">-</div>
-        </div>
-        <div class="status-item">
-            <div class="status-label">Last Health Check</div>
-            <div class="status-value" id="last-check">-</div>
-        </div>
-    </div>
-
-    <div class="container">
-        <div id="services-container" class="services-grid">
-            <div class="loading pulse">
-                <h3>Loading service status...</h3>
-                <p>Connecting to health monitoring system</p>
-            </div>
-        </div>
-
-        <div class="last-updated">
-            <span id="last-updated-time">Never</span>
-        </div>
-    </div>
-
-    <div class="footer">
-        <p>&copy; 2025 - NASWA Open UI | Apache Camel Integration Hub | Health Dashboard v1.0</p>
-    </div>
-
-    <script>
-        let lastUpdateTime = null;
-
-        function updateDashboard() {
-            fetch('/api/health/services')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    updateStatusBar(data);
-                    updateServicesGrid(data.services);
-                    lastUpdateTime = new Date();
-                    const lastUpdatedElement = document.getElementById('last-updated-time');
-                    if (lastUpdatedElement) {
-                        lastUpdatedElement.textContent = `Last updated: ${lastUpdateTime.toLocaleTimeString()}`;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching status:', error);
-                    const container = document.getElementById('services-container');
-                    if (container) {
-                        container.innerHTML = `
-                            <div class="loading">
-                                <h3>Unable to connect to health monitoring</h3>
-                                <p>Error: ${error.message}</p>
-                            </div>
-                        `;
-                    }
-                });
-        }
-
-        function updateStatusBar(data) {
-            const camelStatusElement = document.getElementById('camel-status');
-            const activeConnectionsElement = document.getElementById('active-connections');
-            const totalServicesElement = document.getElementById('total-services');
-            const lastCheckElement = document.getElementById('last-check');
-
-            if (camelStatusElement) camelStatusElement.textContent = data.camelStatus || 'UNKNOWN';
-            if (activeConnectionsElement) activeConnectionsElement.textContent = data.activeConnections || 0;
-            if (totalServicesElement) totalServicesElement.textContent = Object.keys(data.services || {}).length;
-            
-            if (lastCheckElement) {
-                const now = new Date();
-                lastCheckElement.textContent = now.toLocaleTimeString('en-US', {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-        }
-
-        function updateServicesGrid(services) {
-            if (!services || Object.keys(services).length === 0) {
-                document.getElementById('services-container').innerHTML = `
-                    <div class="loading">
-                        <h3>No services registered yet</h3>
-                        <p>Services will appear here as they connect to the gateway</p>
-                    </div>
-                `;
-                return;
-            }
-
-            const servicesHtml = Object.values(services).map(service => {
-                const healthClass = service.health.toLowerCase().replace('_', '-');
-                const lastChecked = service.lastChecked ? 
-                    new Date(service.lastChecked).toLocaleString() : 'Never';
-
-                return `
-                    <div class="service-card ${healthClass}">
-                        <div class="service-header">
-                            <div class="service-name">${service.name}</div>
-                            <div class="service-status ${healthClass}">${service.health.replace('_', ' ')}</div>
-                        </div>
-                        <div class="service-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Technology</div>
-                                <div class="detail-value">${service.technology}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Protocol</div>
-                                <div class="detail-value">${service.protocol}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Endpoint</div>
-                                <div class="detail-value">${service.endpoint}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Last Checked</div>
-                                <div class="detail-value">${lastChecked}</div>
-                            </div>
-                        </div>
-                        <div class="service-message">
-                            ${service.message || 'No additional information'}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('services-container').innerHTML = servicesHtml;
-        }
-
-        // Initial load
-        updateDashboard();
-
-        // Update every 30 seconds
-        setInterval(updateDashboard, 30000);
-
-        // Add some visual feedback when updating
-        setInterval(() => {
-            const statusItems = document.querySelectorAll('.status-value');
-            statusItems.forEach(item => {
-                item.style.opacity = '0.6';
-                setTimeout(() => {
-                    item.style.opacity = '1';
-                }, 200);
-            });
-        }, 30000);
-    </script>
-</body>
-</html>
+</he
