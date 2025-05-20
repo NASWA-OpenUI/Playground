@@ -136,22 +136,31 @@ public class DynamicRouteService {
             }
             
             private void configureGraphQLRoute(InterfaceConfig config, String routeId) {
-                // Basic GraphQL endpoint
-                from("graphql://" + config.getEndpoint() + "?queryFile=schema.graphqls")
-                    .routeId(routeId)
-                    .log("Received GraphQL request on interface: " + config.getName())
-                    .setBody(constant("{ \"data\": { \"status\": \"success\", \"message\": \"GraphQL request received\" } }"));
+                Map<String, Object> templateConfig = parseTemplate(config.getTemplate());
+                String endpoint = config.getEndpoint();
+    
+                // Define a processor to handle GraphQL queries
+                    from("direct:" + routeId + "-graphql")
+                        .routeId(routeId + "-processor")
+                        .log("Processing GraphQL request for interface: " + config.getName())
+                        .process(exchange -> {
+                            // Extract the original request body
+                                String body = exchange.getIn().getBody(String.class);
+                                // Forward it to the GraphQL service (we're acting as a proxy here)
+                                    exchange.getIn().setBody(body);
+                                    exchange.getIn().setHeader(Exchange.CONTENT_TYPE, "application/json");
+                                    exchange.getIn().setHeader("Accept", "application/json");
+                        })
+                .to("http://claimant-services:3000/graphql")
+                .log("GraphQL response received: ${body}");
+        
+            // Define the REST endpoint that will redirect to our GraphQL processor
+            rest(endpoint)
+                .post()
+                .consumes("application/json")
+                .produces("application/json")
+                .to("direct:" + routeId + "-graphql");
             }
-            
-            private void configureGrpcRoute(InterfaceConfig config, String routeId) {
-                // Basic gRPC endpoint
-                from("grpc://0.0.0.0:50051/com.example.HelloService?synchronous=true")
-                    .routeId(routeId)
-                    .log("Received gRPC request on interface: " + config.getName())
-                    .setBody(constant("gRPC response: Hello from Camel Gateway"));
-            }
-        };
-    }
     
     @SuppressWarnings("unchecked")
     private Map<String, Object> parseTemplate(String template) {
