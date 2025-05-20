@@ -11,7 +11,6 @@ const schema = buildSchema(`
   type Employer {
     name: String!
     ein: String!
-    address: Address!
   }
   
   type EmploymentDates {
@@ -65,7 +64,6 @@ const schema = buildSchema(`
   input EmployerInput {
     name: String!
     ein: String!
-    address: AddressInput!
   }
   
   input EmploymentDatesInput {
