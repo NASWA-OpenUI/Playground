@@ -1,43 +1,47 @@
+version: '3.8'
+
 services:
+  # Camel Gateway
   camel-gateway:
-    build: ./module-services/camel-gateway
+    build:
+      context: ./module-services/camel-gateway
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
       - "8081:8081"
-    environment:
-      - CAMEL_HEALTH_CHECK_INTERVAL=30000
-      - CAMEL_LOG_LEVEL=INFO
-    volumes:
-      - ./module-services/camel-gateway/routes:/opt/camel/routes
     networks:
-      - camel-network
+      - ui-modernization
     depends_on:
       - claimant-services
-
-  claimant-services:
-    build: ./module-services/claimant-services
-    ports:
-      - "3000:3000"  # Claimant Services UI and GraphQL
     environment:
-      - MONGODB_URI=mongodb://mongodb:27017/claimant_services
-      - NODE_ENV=development
+      - CLAIMANT_SERVICE_URL=http://claimant-services:3000
+
+  # Claimant Services
+  claimant-services:
+    build:
+      context: ./module-services/claimant-services
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
     networks:
-      - camel-network
+      - ui-modernization
     depends_on:
       - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/claimant_services
 
+  # MongoDB for Claimant Services
   mongodb:
-    image: mongo:7
+    image: mongo:latest
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     networks:
-      - camel-network
+      - ui-modernization
 
 networks:
-  camel-network:
-    driver: bridge
+  ui-modernization:
 
 volumes:
   mongodb_data:
