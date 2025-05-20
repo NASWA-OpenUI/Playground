@@ -136,32 +136,38 @@ public class DynamicRouteService {
             }
             
             private void configureGraphQLRoute(InterfaceConfig config, String routeId) {
+                // Parse template JSON for configuration details
                 Map<String, Object> templateConfig = parseTemplate(config.getTemplate());
-                String endpoint = config.getEndpoint();
     
-                // Define a processor to handle GraphQL queries
-                    from("direct:" + routeId + "-graphql")
-                        .routeId(routeId + "-processor")
-                        .log("Processing GraphQL request for interface: " + config.getName())
-                        .process(exchange -> {
-                            // Extract the original request body
-                                String body = exchange.getIn().getBody(String.class);
-                                // Forward it to the GraphQL service (we're acting as a proxy here)
-                                    exchange.getIn().setBody(body);
-                                    exchange.getIn().setHeader(Exchange.CONTENT_TYPE, "application/json");
-                                    exchange.getIn().setHeader("Accept", "application/json");
-                        })
-                .to("http://claimant-services:3000/graphql")
-                .log("GraphQL response received: ${body}");
+                // Get configuration values with defaults
+                String path = (String) templateConfig.getOrDefault("path", config.getEndpoint());
+                String targetUrl = (String) templateConfig.getOrDefault("targetUrl", "http://claimant-services:3000/graphql");
+    
+                // Log configuration
+                log.info("Configuring GraphQL route: {} with target: {}", routeId, targetUrl);
+    
+                // Define the REST endpoint that will handle GraphQL requests
+                rest(path)
+                    .id(routeId)
+                    .post()
+                    .consumes("application/json")
+                    .produces("application/json")
+                    .to("direct:" + routeId + "-processor");
+    
+                // Define the processing route for GraphQL requests
+                from("direct:" + routeId + "-processor")
+                    .routeId(routeId + "-processor")
+                    .log("Received GraphQL request on interface: " + config.getName())
+                    .removeHeaders("CamelHttp*") // Remove any existing HTTP headers
+                    .setHeader(Exchange.HTTP_METHOD, constant("POST"))
+                    .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+                    .setHeader("Accept", constant("application/json"))
         
-            // Define the REST endpoint that will redirect to our GraphQL processor
-            rest(endpoint)
-                .post()
-                .consumes("application/json")
-                .produces("application/json")
-                .to("direct:" + routeId + "-graphql");
-            }
-    
+                       // Forward the request to the target GraphQL endpoint
+                        .toD(targetUrl)
+                        .log("GraphQL response received from " + targetUrl);
+            }        
+            
     @SuppressWarnings("unchecked")
     private Map<String, Object> parseTemplate(String template) {
         try {
