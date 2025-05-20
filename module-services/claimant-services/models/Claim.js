@@ -67,12 +67,6 @@ const ClaimSchema = new mongoose.Schema({
   employer: {
     name: { type: String, required: true },
     ein: { type: String, required: true }, // Employer Identification Number
-    address: {
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      state: { type: String, required: true },
-      zipCode: { type: String, required: true }
-    }
   },
   
   employmentDates: {
