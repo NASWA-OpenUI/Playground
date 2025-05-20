@@ -90,4 +90,26 @@ public class InterfaceController {
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @PostConstruct
+    public void initializeDefaultServices() {
+        // Create default claimant service interface
+        InterfaceConfig claimantService = new InterfaceConfig();
+        claimantService.setName("Claimant Service");
+        claimantService.setProtocol("GRAPHQL");
+        claimantService.setEndpoint("/api/claimant");
+        claimantService.setDescription("GraphQL API for unemployment claim management");
+        claimantService.setActive(true);
+        claimantService.setTemplate("{\n" +
+                "  \"component\": \"graphql\",\n" +
+                "  \"path\": \"/api/claimant\",\n" +
+                "  \"targetUrl\": \"http://claimant-services:3000/graphql\",\n" +
+                "  \"errorHandler\": true\n" +
+                "}");
+    
+        InterfaceConfig created = interfaceService.createInterface(claimantService);
+        routeService.createOrUpdateRoute(created);
+    
+        logger.info("Default Claimant Service interface created and activated");
+    }
 }
