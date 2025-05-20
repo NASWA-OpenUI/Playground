@@ -104,37 +104,15 @@ public class DynamicRouteService {
                 String path = (String) templateConfig.getOrDefault("path", config.getEndpoint());
                 
                 // Create a basic REST endpoint
-                RouteDefinition route = rest(path)
+                rest(path)
                     .id(routeId)
                     .consumes("application/json")
-                    .produces("application/json");
-                
-                // Add supported methods
-                if (templateConfig.containsKey("methods")) {
-                    @SuppressWarnings("unchecked")
-                    Iterable<String> methods = (Iterable<String>) templateConfig.get("methods");
-                    for (String method : methods) {
-                        switch (method.toUpperCase()) {
-                            case "GET":
-                                route.get().to("direct:processApiRequest");
-                                break;
-                            case "POST":
-                                route.post().to("direct:processApiRequest");
-                                break;
-                            case "PUT":
-                                route.put().to("direct:processApiRequest");
-                                break;
-                            case "DELETE":
-                                route.delete().to("direct:processApiRequest");
-                                break;
-                        }
-                    }
-                } else {
-                    // Default to GET and POST if not specified
-                    route.get().to("direct:processApiRequest");
-                    route.post().to("direct:processApiRequest");
-                }
-                
+                    .produces("application/json")
+                    .get().to("direct:processApiRequest").endRest()
+                    .post().to("direct:processApiRequest").endRest()
+                    .put().to("direct:processApiRequest").endRest()
+                    .delete().to("direct:processApiRequest").endRest();
+                            
                 // Add a processing route that logs and echoes the data
                 from("direct:processApiRequest")
                     .routeId(routeId + "-processor")
