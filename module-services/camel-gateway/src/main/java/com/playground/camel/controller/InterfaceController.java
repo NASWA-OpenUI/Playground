@@ -18,6 +18,12 @@ public class InterfaceController {
     @Autowired
     private InterfaceConfigService interfaceService;
 
+    @Autowired
+    private InterfaceConfigService interfaceService;
+
+    @Autowired
+    private DynamicRouteService routeService;
+    
     @GetMapping
     public ResponseEntity<List<InterfaceConfig>> getAllInterfaces() {
         return ResponseEntity.ok(interfaceService.getAllInterfaces());
