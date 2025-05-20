@@ -39,6 +39,9 @@ public class InterfaceController {
     @PostMapping
     public ResponseEntity<InterfaceConfig> createInterface(@RequestBody InterfaceConfig config) {
         InterfaceConfig created = interfaceService.createInterface(config);
+        if (created.isActive()) {
+            routeService.createOrUpdateRoute(created);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -46,11 +49,12 @@ public class InterfaceController {
     public ResponseEntity<InterfaceConfig> updateInterface(
             @PathVariable Long id,
             @RequestBody InterfaceConfig config) {
-        
+    
         return interfaceService.getInterfaceById(id)
                 .map(existing -> {
                     config.setId(id);
                     InterfaceConfig updated = interfaceService.updateInterface(config);
+                    routeService.createOrUpdateRoute(updated);
                     return ResponseEntity.ok(updated);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -59,18 +63,20 @@ public class InterfaceController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteInterface(@PathVariable Long id) {
         return interfaceService.getInterfaceById(id)
-                .map(existing -> {
-                    interfaceService.deleteInterface(id);
-                    return ResponseEntity.noContent().<Void>build();
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
+            .map(existing -> {
+                routeService.removeRoute(id);
+                interfaceService.deleteInterface(id);
+                return ResponseEntity.noContent().<Void>build();
+            })
+            .orElseGet(() -> ResponseEntity.notFound().build());
+}
 
     @PostMapping("/{id}/activate")
     public ResponseEntity<Void> activateInterface(@PathVariable Long id) {
         return interfaceService.getInterfaceById(id)
                 .map(existing -> {
                     interfaceService.activateInterface(id);
+                    routeService.createOrUpdateRoute(existing);
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -81,6 +87,7 @@ public class InterfaceController {
         return interfaceService.getInterfaceById(id)
                 .map(existing -> {
                     interfaceService.deactivateInterface(id);
+                    routeService.removeRoute(id);
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
