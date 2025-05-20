@@ -1,5 +1,6 @@
 package com.playground.camel.controller;
 
+import com.playground.camel.service.DynamicRouteService;
 import com.playground.camel.model.InterfaceConfig;
 import com.playground.camel.service.InterfaceConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
