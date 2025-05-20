@@ -1,64 +1,111 @@
-package com.playground.camel.service;
+package com.playground.camel.model;
 
-import com.playground.camel.model.InterfaceConfig;
-import com.playground.camel.repository.InterfaceConfigRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
-@Service
-public class InterfaceConfigService {
+@Entity
+@Table(name = "interface_configs")
+public class InterfaceConfig {
 
-    @Autowired
-    private InterfaceConfigRepository repository;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    public List<InterfaceConfig> getAllInterfaces() {
-        return repository.findAll();
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private String protocol; // REST, SOAP, GRPC, GRAPHQL
+
+    @Column(nullable = false)
+    private String endpoint; // The URL path for this interface
+
+    @Column
+    private String description;
+
+    @Column
+    private String template; // JSON template of default configuration
+
+    @Column
+    private boolean active = false;
+
+    @Column(name = "creation_date")
+    private LocalDateTime creationDate = LocalDateTime.now();
+
+    @Column(name = "last_modified")
+    private LocalDateTime lastModified = LocalDateTime.now();
+    
+    // Standard getters and setters
+    
+    public Long getId() {
+        return id;
     }
 
-    public List<InterfaceConfig> getActiveInterfaces() {
-        return repository.findByActive(true);
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public Optional<InterfaceConfig> getInterfaceById(Long id) {
-        return repository.findById(id);
+    public String getName() {
+        return name;
     }
 
-    public Optional<InterfaceConfig> getInterfaceByName(String name) {
-        return repository.findByName(name);
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public InterfaceConfig createInterface(InterfaceConfig config) {
-        config.setCreationDate(LocalDateTime.now());
-        config.setLastModified(LocalDateTime.now());
-        return repository.save(config);
+    public String getProtocol() {
+        return protocol;
     }
 
-    public InterfaceConfig updateInterface(InterfaceConfig config) {
-        config.setLastModified(LocalDateTime.now());
-        return repository.save(config);
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
     }
 
-    public void deleteInterface(Long id) {
-        repository.deleteById(id);
+    public String getEndpoint() {
+        return endpoint;
     }
 
-    public void activateInterface(Long id) {
-        repository.findById(id).ifPresent(config -> {
-            config.setActive(true);
-            config.setLastModified(LocalDateTime.now());
-            repository.save(config);
-        });
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 
-    public void deactivateInterface(Long id) {
-        repository.findById(id).ifPresent(config -> {
-            config.setActive(false);
-            config.setLastModified(LocalDateTime.now());
-            repository.save(config);
-        });
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(String template) {
+        this.template = template;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public LocalDateTime getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(LocalDateTime creationDate) {
+        this.creationDate = creationDate;
+    }
+
+    public LocalDateTime getLastModified() {
+        return lastModified;
+    }
+
+    public void setLastModified(LocalDateTime lastModified) {
+        this.lastModified = lastModified;
     }
 }
