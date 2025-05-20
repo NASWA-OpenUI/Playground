@@ -102,17 +102,17 @@ public class DynamicRouteService {
                 // Parse template JSON for configuration details
                 Map<String, Object> templateConfig = parseTemplate(config.getTemplate());
                 String path = (String) templateConfig.getOrDefault("path", config.getEndpoint());
-                
-                // Create a basic REST endpoint
+    
+                // Create a basic REST endpoint with common HTTP methods
                 rest(path)
                     .id(routeId)
                     .consumes("application/json")
                     .produces("application/json")
-                    .get().to("direct:processApiRequest").endRest()
-                    .post().to("direct:processApiRequest").endRest()
-                    .put().to("direct:processApiRequest").endRest()
-                    .delete().to("direct:processApiRequest").endRest();
-                            
+                    .get().to("direct:processApiRequest")
+                    .post().to("direct:processApiRequest")
+                    .put().to("direct:processApiRequest")
+                    .delete().to("direct:processApiRequest");
+                
                 // Add a processing route that logs and echoes the data
                 from("direct:processApiRequest")
                     .routeId(routeId + "-processor")
