@@ -382,7 +382,7 @@ function displayClaimStatus(claim) {
         
         <div class="status-timeline">
             <h4>Status History</h4>
-            ${claim.statusHistory.map(entry => `
+            ${(claim.statusHistory || []).map(entry => `
                 <div class="timeline-item">
                     <div class="timeline-date">${formatDate(entry.timestamp)}</div>
                     <div class="timeline-content">
