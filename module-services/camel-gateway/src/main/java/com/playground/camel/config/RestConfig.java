@@ -9,7 +9,7 @@ public class RestConfig extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        // Configure REST to use servlet component
+        // Configure REST component to use servlet
         restConfiguration()
             .component("servlet")
             .bindingMode(RestBindingMode.json)
