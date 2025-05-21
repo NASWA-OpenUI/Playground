@@ -3,6 +3,7 @@ package com.playground.camel.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.playground.camel.model.InterfaceConfig;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.RouteDefinition;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -162,21 +163,40 @@ public class DynamicRouteService {
                     .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                     .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
                     .setHeader("Accept", constant("application/json"))
-        
-                       // Forward the request to the target GraphQL endpoint
-                        .toD(targetUrl)
-                        .log("GraphQL response received from " + targetUrl);
-            }        
+                    // Forward the request to the target GraphQL endpoint
+                    .toD(targetUrl)
+                    .log("GraphQL response received from " + targetUrl);
+            }
             
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> parseTemplate(String template) {
-        try {
-            return objectMapper.readValue(template, HashMap.class);
-        } catch (Exception e) {
-            // Return empty map if template can't be parsed
-            return new HashMap<>();
-				}
-			}
-		}
-	}
-};
+            private void configureGrpcRoute(InterfaceConfig config, String routeId) {
+                // Parse template JSON for configuration details
+                Map<String, Object> templateConfig = parseTemplate(config.getTemplate());
+                
+                // Get configuration values with defaults
+                String serviceName = (String) templateConfig.getOrDefault("serviceName", "default-grpc-service");
+                String targetUrl = (String) templateConfig.getOrDefault("targetUrl", "grpc://localhost:9000/" + serviceName);
+                
+                // Log configuration
+                log.info("Configuring gRPC route: {} with target: {}", routeId, targetUrl);
+                
+                // Define the processing route for gRPC requests
+                from("direct:" + routeId + "-entry")
+                    .routeId(routeId)
+                    .log("Received gRPC request on interface: " + config.getName())
+                    // Forward the request to the target gRPC endpoint
+                    .to(targetUrl)
+                    .log("gRPC response received");
+            }
+            
+            @SuppressWarnings("unchecked")
+            private Map<String, Object> parseTemplate(String template) {
+                try {
+                    return objectMapper.readValue(template, HashMap.class);
+                } catch (Exception e) {
+                    // Return empty map if template can't be parsed
+                    return new HashMap<>();
+                }
+            }
+        };
+    }
+}
