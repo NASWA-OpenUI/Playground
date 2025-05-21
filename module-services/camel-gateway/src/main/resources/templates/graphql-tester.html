@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphQL Tester - UI Modernization</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .graphql-tester {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .result pre {
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="graphql-tester">
+        <h2>GraphQL API Tester</h2>
+        <form id="queryForm">
+            <div class="form-group">
+                <label for="query">GraphQL Query:</label>
+                <textarea 
+                    id="query"
+                    rows="10"
+                    class="form-control"
+                >query {
+  getClaim(claimId: "CLM-1234567890-ABC12") {
+    claimId
+    firstName
+    lastName
+    status
+    statusDisplayName
+  }
+}</textarea>
+            </div>
+            <button type="submit" id="submitBtn" class="btn">Execute Query</button>
+        </form>
+        
+        <div id="result" class="result" style="display: none;">
+            <h3>Result:</h3>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const queryForm = document.getElementById('queryForm');
+            const queryTextarea = document.getElementById('query');
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            queryForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const query = queryTextarea.value;
+                submitBtn.textContent = 'Executing...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const response = await fetch('/api/claimant/graphql', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ query })
+                    });
+                    
+                    const data = await response.json();
+                    resultContent.textContent = JSON.stringify(data, null, 2);
+                    resultDiv.style.display = 'block';
+                } catch (error) {
+                    resultContent.textContent = JSON.stringify({ error: error.message }, null, 2);
+                    resultDiv.style.display = 'block';
+                } finally {
+                    submitBtn.textContent = 'Execute Query';
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
