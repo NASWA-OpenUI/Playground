@@ -1,152 +1,208 @@
-const { gql } = require('graphql-tag');
-const { print } = require('graphql');
-const axios = require('axios');
+const Claim = require('../models/Claim');
+const { v4: uuidv4 } = require('uuid');
+const camelService = require('../services/camel');
 
-// Configuration defaults
-const CAMEL_GRAPHQL_URL = process.env.CAMEL_GRAPHQL_URL || 'http://localhost:8080/api/claimant/graphql';
-const CAMEL_TIMEOUT = parseInt(process.env.CAMEL_TIMEOUT || '5000', 10);
-const CAMEL_RETRY_COUNT = parseInt(process.env.CAMEL_RETRY_COUNT || '3', 10);
-
-// GraphQL mutation for submitting a claim to Camel
-const CREATE_CLAIM_MUTATION = gql`
-  mutation CreateClaim($input: ClaimInput!) {
-    createClaim(input: $input) {
-      claimId
-      status
-      statusDisplayName
-      submissionTimestamp
-    }
-  }
-`;
-
-/**
- * Sends claim data to the Camel API Gateway via GraphQL
- * 
- * @param {Object} claim - The claim object to send
- * @returns {Promise<Object>} - The response from the Camel API
- */
-async function sendClaimToCamel(claim) {
-  try {
-    console.log(`Sending claim ${claim.claimId} to Camel API Gateway via GraphQL at ${CAMEL_GRAPHQL_URL}`);
-    
-    // Transform claim to input format for GraphQL mutation
-    const claimInput = formatClaimForGraphQL(claim);
-    
-    // Prepare the GraphQL mutation
-    const graphqlQuery = {
-      query: print(CREATE_CLAIM_MUTATION),
-      variables: {
-        input: claimInput
+const resolvers = {
+  // Queries
+  getClaim: async ({ claimId }) => {
+    try {
+      const claim = await Claim.findOne({ claimId });
+      if (!claim) {
+        throw new Error(`Claim with ID ${claimId} not found`);
       }
-    };
-    
-    // Configure the request
-    const options = {
-      timeout: CAMEL_TIMEOUT,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Source-Service': 'claimant-services',
-        'X-Claim-ID': claim.claimId
+      return formatClaim(claim);
+    } catch (error) {
+      console.error('Error fetching claim:', error);
+      throw error;
+    }
+  },
+
+  getClaimsByUser: async ({ userId }) => {
+    try {
+      const claims = await Claim.find({ userId }).sort({ submissionTimestamp: -1 });
+      return claims.map(formatClaim);
+    } catch (error) {
+      console.error('Error fetching claims for user:', error);
+      throw error;
+    }
+  },
+
+  getClaimStatus: async ({ claimId }) => {
+    try {
+      const claim = await Claim.findOne({ claimId });
+      if (!claim) {
+        throw new Error(`Claim with ID ${claimId} not found`);
       }
-    };
-
-    // Send the GraphQL mutation to Camel
-    const response = await axios.post(CAMEL_GRAPHQL_URL, graphqlQuery, options);
-    
-    console.log(`Successfully sent claim ${claim.claimId} to Camel API Gateway. Status: ${response.status}`);
-    return {
-      success: true,
-      status: response.status,
-      responseData: response.data,
-      claimId: claim.claimId
-    };
-  } catch (error) {
-    console.error(`Error sending claim ${claim.claimId} to Camel API Gateway:`, error.message);
-    
-    // Error handling logic similar to previous implementation
-    if (error.response) {
-      return {
-        success: false,
-        status: error.response.status,
-        error: error.response.data,
-        claimId: claim.claimId
-      };
-    } else if (error.request) {
-      return {
-        success: false,
-        error: 'Connection error: No response from Camel API Gateway',
-        claimId: claim.claimId
-      };
-    } else {
-      return {
-        success: false,
-        error: `Request setup error: ${error.message}`,
-        claimId: claim.claimId
-      };
+      return claim.status;
+    } catch (error) {
+      console.error('Error fetching claim status:', error);
+      throw error;
     }
-  }
-}
+  },
 
-/**
- * Formats the claim data for GraphQL mutation
- * Converts our MongoDB model to the format expected by the GraphQL schema
- * 
- * @param {Object} claim - The claim object from MongoDB
- * @returns {Object} - Formatted claim data for GraphQL
- */
-function formatClaimForGraphQL(claim) {
-  // The input format should match our GraphQL schema definition
-  return {
-    firstName: claim.firstName,
-    lastName: claim.lastName,
-    ssn: claim.ssn,
-    dateOfBirth: claim.dateOfBirth instanceof Date ? 
-      claim.dateOfBirth.toISOString().split('T')[0] : claim.dateOfBirth,
-    email: claim.email,
-    phone: claim.phone,
-    address: {
-      street: claim.address.street,
-      city: claim.address.city,
-      state: claim.address.state,
-      zipCode: claim.address.zipCode
-    },
-    employer: {
-      name: claim.employer.name,
-      ein: claim.employer.ein
-    },
-    employmentDates: {
-      startDate: claim.employmentDates.startDate instanceof Date ? 
-        claim.employmentDates.startDate.toISOString().split('T')[0] : claim.employmentDates.startDate,
-      endDate: claim.employmentDates.endDate instanceof Date ? 
-        claim.employmentDates.endDate.toISOString().split('T')[0] : claim.employmentDates.endDate
-    },
-    separationReason: claim.separationReason,
-    separationDetails: claim.separationDetails || '',
-    wageData: {
-      lastQuarterEarnings: claim.wageData.lastQuarterEarnings,
-      annualEarnings: claim.wageData.annualEarnings
+  health: () => {
+    return `Claimant Services GraphQL API is running - ${new Date().toISOString()}`;
+  },
+
+  // Mutations
+  createClaim: async ({ input }) => {
+    try {
+      // Generate unique IDs
+      const claimId = `CLM-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+      const userId = uuidv4();
+
+      // Create new claim
+      const claim = new Claim({
+        claimId,
+        userId,
+        ...input,
+        status: 'submitted',
+        submissionTimestamp: new Date(),
+        statusHistory: [{
+          status: 'submitted',
+          timestamp: new Date(),
+          notes: 'Claim initially submitted'
+        }]
+      });
+
+      const savedClaim = await claim.save();
+      console.log(`New claim created: ${claimId}`);
+      
+      // Now send the claim to the Camel API Gateway via GraphQL
+      try {
+        const camelResponse = await camelService.sendClaimWithRetry(savedClaim);
+        
+        if (camelResponse.success) {
+          console.log(`Successfully forwarded claim ${claimId} to Claims Processing via Camel`);
+          
+          // Optionally update the claim with forwarding status
+          savedClaim.statusHistory.push({
+            status: savedClaim.status,
+            timestamp: new Date(),
+            notes: 'Claim successfully forwarded to Claims Processing'
+          });
+          await savedClaim.save();
+        } else {
+          console.error(`Failed to forward claim ${claimId} to Claims Processing: ${camelResponse.error}`);
+          
+          // Record the failure in the claim history but don't fail the overall operation
+          savedClaim.statusHistory.push({
+            status: savedClaim.status,
+            timestamp: new Date(),
+            notes: `Claim forwarding to Claims Processing failed: ${camelResponse.error}`
+          });
+          await savedClaim.save();
+        }
+      } catch (camelError) {
+        console.error(`Error sending claim to Camel: ${camelError.message}`);
+        // We don't want to fail the claim submission if Camel is unavailable,
+        // but we should log the error and record it in the claim history
+        savedClaim.statusHistory.push({
+          status: savedClaim.status,
+          timestamp: new Date(),
+          notes: `Error forwarding claim to Claims Processing: ${camelError.message}`
+        });
+        await savedClaim.save();
+      }
+      
+      return formatClaim(savedClaim);
+    } catch (error) {
+      console.error('Error creating claim:', error);
+      throw new Error(`Failed to create claim: ${error.message}`);
     }
-  };
-}
+  },
 
-// Retry function remains the same as before
-async function sendClaimWithRetry(claim, retries = CAMEL_RETRY_COUNT) {
-  try {
-    return await sendClaimToCamel(claim);
-  } catch (error) {
-    if (retries > 0) {
-      console.log(`Retrying sending claim ${claim.claimId} to Camel. Attempts remaining: ${retries - 1}`);
-      const delay = Math.pow(2, CAMEL_RETRY_COUNT - retries) * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return sendClaimWithRetry(claim, retries - 1);
-    } else {
-      console.error(`Failed to send claim ${claim.claimId} to Camel after ${CAMEL_RETRY_COUNT} attempts`);
+  updateClaimStatus: async ({ claimId, status, notes }) => {
+    try {
+      const claim = await Claim.findOne({ claimId });
+      if (!claim) {
+        throw new Error(`Claim with ID ${claimId} not found`);
+      }
+
+      // Validate status
+      const validStatuses = ['submitted', 'processing', 'waitingForEmployer', 'approved', 'denied'];
+      if (!validStatuses.includes(status)) {
+        throw new Error(`Invalid status: ${status}`);
+      }
+
+      claim.status = status;
+      if (notes) {
+        claim.statusHistory.push({
+          status,
+          timestamp: new Date(),
+          notes
+        });
+      }
+
+      const updatedClaim = await claim.save();
+      console.log(`Claim ${claimId} status updated to: ${status}`);
+      
+      return formatClaim(updatedClaim);
+    } catch (error) {
+      console.error('Error updating claim status:', error);
+      throw error;
+    }
+  },
+
+  updateBenefitAmounts: async ({ claimId, weeklyAmount, maximumAmount }) => {
+    try {
+      const claim = await Claim.findOne({ claimId });
+      if (!claim) {
+        throw new Error(`Claim with ID ${claimId} not found`);
+      }
+
+      claim.weeklyBenefitAmount = weeklyAmount;
+      claim.maximumBenefitAmount = maximumAmount;
+      claim.statusHistory.push({
+        status: claim.status,
+        timestamp: new Date(),
+        notes: `Benefit amounts calculated: Weekly $${weeklyAmount}, Maximum $${maximumAmount}`
+      });
+
+      const updatedClaim = await claim.save();
+      console.log(`Claim ${claimId} benefit amounts updated: Weekly $${weeklyAmount}, Maximum $${maximumAmount}`);
+      
+      return formatClaim(updatedClaim);
+    } catch (error) {
+      console.error('Error updating benefit amounts:', error);
       throw error;
     }
   }
+};
+
+// Helper function to format claim data for GraphQL response
+function formatClaim(claim) {
+  return {
+    id: claim._id.toString(),
+    claimId: claim.claimId,
+    userId: claim.userId,
+    firstName: claim.firstName,
+    lastName: claim.lastName,
+    ssn: claim.ssn,
+    dateOfBirth: claim.dateOfBirth.toISOString().split('T')[0], // Format as YYYY-MM-DD
+    email: claim.email,
+    phone: claim.phone,
+    address: claim.address,
+    employer: claim.employer,
+    employmentDates: {
+      startDate: claim.employmentDates.startDate.toISOString().split('T')[0],
+      endDate: claim.employmentDates.endDate.toISOString().split('T')[0]
+    },
+    separationReason: claim.separationReason,
+    separationDetails: claim.separationDetails || '',
+    wageData: claim.wageData,
+    status: claim.status,
+    statusDisplayName: claim.getStatusDisplayName(),
+    weeklyBenefitAmount: claim.weeklyBenefitAmount,
+    maximumBenefitAmount: claim.maximumBenefitAmount,
+    submissionTimestamp: claim.submissionTimestamp.toISOString(),
+    lastUpdated: claim.lastUpdated.toISOString(),
+    statusHistory: claim.statusHistory.map(entry => ({
+      status: entry.status,
+      timestamp: entry.timestamp.toISOString(),
+      notes: entry.notes || ''
+    }))
+  };
 }
 
-module.exports = {
-  sendClaimToCamel,
-  sendClaimWithRetry
-};
+module.exports = resolvers;
