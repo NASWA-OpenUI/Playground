@@ -1,36 +1,31 @@
-version: '3.8'
+version: '3'
 
 services:
-  # Camel Gateway
   camel-gateway:
     build:
       context: ./module-services/camel-gateway
-      dockerfile: Dockerfile
     ports:
       - "8080:8080"
       - "8081:8081"
-    networks:
-      - ui-modernization
     depends_on:
       - claimant-services
     environment:
-      - CLAIMANT_SERVICE_URL=http://claimant-services:3000
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - ui-modernization
 
-  # Claimant Services
   claimant-services:
     build:
       context: ./module-services/claimant-services
-      dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    networks:
-      - ui-modernization
-    depends_on:
-      - mongodb
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/claimant_services
+    depends_on:
+      - mongodb
+    networks:
+      - ui-modernization
 
-  # MongoDB for Claimant Services
   mongodb:
     image: mongo:latest
     ports:
@@ -40,8 +35,9 @@ services:
     networks:
       - ui-modernization
 
-networks:
-  ui-modernization:
-
 volumes:
   mongodb_data:
+
+networks:
+  ui-modernization:
+    driver: bridge
