@@ -199,4 +199,29 @@ public class DataTransformer {
             
             if (wages.has("lastQuarterEarnings")) 
                 transformedWages.put("base_period_q4", wages.get("lastQuarterEarnings").asDouble());
-            if (wages.has("annualEarnings"))
+            if (wages.has("annualEarnings")) 
+                transformedWages.put("total_earnings", wages.get("annualEarnings").asDouble());
+            
+            transformedClaim.set("wage_history", transformedWages);
+        }
+        
+        // Status information
+        if (claimNode.has("status")) {
+            ObjectNode transformedStatus = objectMapper.createObjectNode();
+            transformedStatus.put("status_code", claimNode.get("status").asText());
+            
+            if (claimNode.has("submissionTimestamp")) 
+                transformedStatus.put("submission_date", claimNode.get("submissionTimestamp").asText());
+            
+            transformedClaim.set("claim_status", transformedStatus);
+        }
+        
+        // Add processing metadata
+        ObjectNode metadata = objectMapper.createObjectNode();
+        metadata.put("source_system", "claimant-services");
+        metadata.put("received_timestamp", System.currentTimeMillis());
+        transformedClaim.set("metadata", metadata);
+        
+        return objectMapper.writeValueAsString(transformedClaim);
+    }
+}
