@@ -4,11 +4,93 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.parsers.DocumentBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import java.io.StringWriter;
+import java.util.Iterator;
+import java.util.Map;
 
 @Component
 public class DataTransformer {
 
+    private static final Logger logger = LoggerFactory.getLogger(DataTransformer.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * Transforms JSON data to XML format
+     * 
+     * @param jsonData The JSON data to transform
+     * @return The data in XML format
+     */
+    public String jsonToXml(String jsonData) throws Exception {
+        logger.info("Transforming JSON to XML: {}", jsonData);
+        
+        // Parse JSON
+        JsonNode rootNode = objectMapper.readTree(jsonData);
+        
+        // Create XML document
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.newDocument();
+        
+        // Create root element
+        Element rootElement = doc.createElement("root");
+        doc.appendChild(rootElement);
+        
+        // Convert JSON to XML elements
+        processJsonNode(rootNode, rootElement, doc);
+        
+        // Convert to string
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        javax.xml.transform.Transformer transformer = transformerFactory.newTransformer();
+        StringWriter writer = new StringWriter();
+        transformer.transform(new DOMSource(doc), new StreamResult(writer));
+        
+        String xmlOutput = writer.toString();
+        logger.info("Transformed XML: {}", xmlOutput);
+        
+        return xmlOutput;
+    }
+    
+    /**
+     * Recursive helper method to process JSON nodes and convert to XML
+     */
+    private void processJsonNode(JsonNode jsonNode, Element xmlElement, Document doc) {
+        if (jsonNode.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = jsonNode.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                String fieldName = field.getKey();
+                JsonNode fieldValue = field.getValue();
+                
+                if (fieldValue.isValueNode()) {
+                    // Simple value
+                    Element childElement = doc.createElement(fieldName);
+                    childElement.setTextContent(fieldValue.asText());
+                    xmlElement.appendChild(childElement);
+                } else {
+                    // Complex object or array
+                    Element childElement = doc.createElement(fieldName);
+                    xmlElement.appendChild(childElement);
+                    processJsonNode(fieldValue, childElement, doc);
+                }
+            }
+        } else if (jsonNode.isArray()) {
+            // Handle array elements
+            for (int i = 0; i < jsonNode.size(); i++) {
+                Element itemElement = doc.createElement("item");
+                xmlElement.appendChild(itemElement);
+                processJsonNode(jsonNode.get(i), itemElement, doc);
+            }
+        }
+    }
 
     /**
      * Extracts claim data from a GraphQL mutation response
@@ -117,29 +199,4 @@ public class DataTransformer {
             
             if (wages.has("lastQuarterEarnings")) 
                 transformedWages.put("base_period_q4", wages.get("lastQuarterEarnings").asDouble());
-            if (wages.has("annualEarnings")) 
-                transformedWages.put("total_earnings", wages.get("annualEarnings").asDouble());
-            
-            transformedClaim.set("wage_history", transformedWages);
-        }
-        
-        // Status information
-        if (claimNode.has("status")) {
-            ObjectNode transformedStatus = objectMapper.createObjectNode();
-            transformedStatus.put("status_code", claimNode.get("status").asText());
-            
-            if (claimNode.has("submissionTimestamp")) 
-                transformedStatus.put("submission_date", claimNode.get("submissionTimestamp").asText());
-            
-            transformedClaim.set("claim_status", transformedStatus);
-        }
-        
-        // Add processing metadata
-        ObjectNode metadata = objectMapper.createObjectNode();
-        metadata.put("source_system", "claimant-services");
-        metadata.put("received_timestamp", System.currentTimeMillis());
-        transformedClaim.set("metadata", metadata);
-        
-        return objectMapper.writeValueAsString(transformedClaim);
-    }
-}
+            if (wages.has("annualEarnings"))
