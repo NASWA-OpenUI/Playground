@@ -1,130 +1,145 @@
 package com.playground.camel.transformers;
 
+import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import java.io.StringWriter;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-
-@Component("dataTransformer")
+@Component
 public class DataTransformer {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public String jsonToXml(String jsonInput) throws Exception {
-        // Parse incoming JSON (GraphQL format)
-        JsonNode jsonNode = objectMapper.readTree(jsonInput);
-        
-        // Create XML document
-        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-        Document doc = dBuilder.newDocument();
-
-        // Root element
-        Element rootElement = doc.createElement("employeeSubmission");
-        doc.appendChild(rootElement);
-
-        // Transform field names and formats
-        // firstName -> first_name
-        if (jsonNode.has("firstName")) {
-            Element firstName = doc.createElement("first_name");
-            firstName.appendChild(doc.createTextNode(jsonNode.get("firstName").asText()));
-            rootElement.appendChild(firstName);
-        }
-
-        // lastName -> last_name
-        if (jsonNode.has("lastName")) {
-            Element lastName = doc.createElement("last_name");
-            lastName.appendChild(doc.createTextNode(jsonNode.get("lastName").asText()));
-            rootElement.appendChild(lastName);
-        }
-
-        // companyName -> company_name
-        if (jsonNode.has("companyName")) {
-            Element companyName = doc.createElement("company_name");
-            companyName.appendChild(doc.createTextNode(jsonNode.get("companyName").asText()));
-            rootElement.appendChild(companyName);
-        }
-
-        // hireDate -> hire_date (with format conversion)
-        if (jsonNode.has("hireDate")) {
-            Element hireDate = doc.createElement("hire_date");
-            String hireDateValue = jsonNode.get("hireDate").asText();
-            // Convert ISO format to MM/dd/yyyy for XML
-            String formattedDate = convertDateFormat(hireDateValue);
-            hireDate.appendChild(doc.createTextNode(formattedDate));
-            rootElement.appendChild(hireDate);
-        }
-
-        // separationDate -> separation_date (with format conversion)
-        if (jsonNode.has("separationDate")) {
-            Element separationDate = doc.createElement("separation_date");
-            String separationDateValue = jsonNode.get("separationDate").asText();
-            // Convert ISO format to MM/dd/yyyy for XML
-            String formattedDate = convertDateFormat(separationDateValue);
-            separationDate.appendChild(doc.createTextNode(formattedDate));
-            rootElement.appendChild(separationDate);
-        }
-
-        // Add metadata
-        Element submissionTime = doc.createElement("submission_timestamp");
-        submissionTime.appendChild(doc.createTextNode(String.valueOf(System.currentTimeMillis())));
-        rootElement.appendChild(submissionTime);
-
-        // Convert to string
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        Transformer transformer = transformerFactory.newTransformer();
-        StringWriter writer = new StringWriter();
-        transformer.transform(new DOMSource(doc), new StreamResult(writer));
-
-        return writer.getBuffer().toString();
-    }
-
-    public String xmlToJson(String xmlInput) throws Exception {
-        // For now, create a simple JSON response
-        // In a real implementation, you'd parse the XML and convert properly
-        String jsonResponse = """
-            {
-                "status": "success",
-                "message": "Submission received and processed",
-                "timestamp": "%s",
-                "processingId": "PRC-%d"
-            }
-            """.formatted(
-                java.time.LocalDateTime.now().toString(),
-                System.currentTimeMillis() % 10000
-            );
-
-        return jsonResponse;
-    }
-
-    private String convertDateFormat(String isoDate) {
-        try {
-            // Convert from YYYY-MM-DD to MM/dd/yyyy
-            LocalDate date = LocalDate.parse(isoDate);
-            return date.format(DateTimeFormatter.ofPattern("MM/dd/yyyy"));
-        } catch (Exception e) {
-            // If parsing fails, return original value
-            return isoDate;
-        }
-    }
-
+    /**
+     * Extracts claim data from a GraphQL mutation response
+     * 
+     * @param graphQLResponse The response from the GraphQL API
+     * @return The extracted claim data as a JSON string
+     */
     public String extractClaimFromGraphQL(String graphQLResponse) throws Exception {
         JsonNode responseNode = objectMapper.readTree(graphQLResponse);
-            if (responseNode.has("data") && responseNode.get("data").has("createClaim")) {
-                return objectMapper.writeValueAsString(responseNode.get("data").get("createClaim"));
+        
+        // Navigate to the actual claim data in the GraphQL response
+        if (responseNode.has("data") && responseNode.get("data").has("createClaim")) {
+            return objectMapper.writeValueAsString(responseNode.get("data").get("createClaim"));
         }
-    
-    throw new IllegalArgumentException("Invalid GraphQL response format - cannot extract claim data");
+        
+        throw new IllegalArgumentException("Invalid GraphQL response format - cannot extract claim data");
+    }
+
+    /**
+     * Transforms claim data from claimant-services format to claims-processing format
+     * 
+     * @param claimJson The claim data in JSON format
+     * @return The transformed claim data as a JSON string
+     */
+    public String transformClaimToProcessingFormat(String claimJson) throws Exception {
+        JsonNode claimNode = objectMapper.readTree(claimJson);
+        ObjectNode transformedClaim = objectMapper.createObjectNode();
+        
+        // Map fields from claimant-services format to claims-processing format
+        // This is where we handle the field name differences between services
+        
+        // Claim reference ID
+        if (claimNode.has("claimId")) {
+            transformedClaim.put("claim_reference_id", claimNode.get("claimId").asText());
+        }
+        
+        // Claimant information
+        if (claimNode.has("firstName") && claimNode.has("lastName")) {
+            ObjectNode transformedClaimant = objectMapper.createObjectNode();
+            
+            transformedClaimant.put("claimant_id", claimNode.has("userId") ? claimNode.get("userId").asText() : "");
+            transformedClaimant.put("first_name", claimNode.get("firstName").asText());
+            transformedClaimant.put("last_name", claimNode.get("lastName").asText());
+            if (claimNode.has("ssn")) transformedClaimant.put("ssn", claimNode.get("ssn").asText());
+            if (claimNode.has("dateOfBirth")) transformedClaimant.put("birth_date", claimNode.get("dateOfBirth").asText());
+            
+            // Contact information
+            ObjectNode transformedContact = objectMapper.createObjectNode();
+            if (claimNode.has("email")) transformedContact.put("email_address", claimNode.get("email").asText());
+            if (claimNode.has("phone")) transformedContact.put("phone_number", claimNode.get("phone").asText());
+            
+            // Address
+            if (claimNode.has("address")) {
+                JsonNode address = claimNode.get("address");
+                ObjectNode transformedAddress = objectMapper.createObjectNode();
+                
+                if (address.has("street")) transformedAddress.put("street", address.get("street").asText());
+                if (address.has("city")) transformedAddress.put("city", address.get("city").asText());
+                if (address.has("state")) transformedAddress.put("state", address.get("state").asText());
+                if (address.has("zipCode")) transformedAddress.put("postal_code", address.get("zipCode").asText());
+                
+                transformedContact.set("mailing_address", transformedAddress);
+            }
+            
+            transformedClaimant.set("contact_info", transformedContact);
+            transformedClaim.set("claimant", transformedClaimant);
+        }
+        
+        // Employment information
+        if (claimNode.has("employer")) {
+            JsonNode employment = claimNode.get("employer");
+            ObjectNode transformedEmployment = objectMapper.createObjectNode();
+            
+            // Employer
+            ObjectNode transformedEmployer = objectMapper.createObjectNode();
+            if (employment.has("name")) transformedEmployer.put("business_name", employment.get("name").asText());
+            if (employment.has("ein")) transformedEmployer.put("employer_id", employment.get("ein").asText());
+            transformedEmployment.set("employer", transformedEmployer);
+            
+            // Employment dates
+            if (claimNode.has("employmentDates")) {
+                JsonNode dates = claimNode.get("employmentDates");
+                ObjectNode transformedDates = objectMapper.createObjectNode();
+                
+                if (dates.has("startDate")) transformedDates.put("start", dates.get("startDate").asText());
+                if (dates.has("endDate")) transformedDates.put("end", dates.get("endDate").asText());
+                
+                transformedEmployment.set("employment_period", transformedDates);
+            }
+            
+            // Separation details
+            if (claimNode.has("separationReason")) {
+                transformedEmployment.put("separation_reason_code", claimNode.get("separationReason").asText());
+            }
+            if (claimNode.has("separationDetails")) {
+                transformedEmployment.put("separation_explanation", claimNode.get("separationDetails").asText());
+            }
+            
+            transformedClaim.set("employment_record", transformedEmployment);
+        }
+        
+        // Wage information
+        if (claimNode.has("wageData")) {
+            JsonNode wages = claimNode.get("wageData");
+            ObjectNode transformedWages = objectMapper.createObjectNode();
+            
+            if (wages.has("lastQuarterEarnings")) 
+                transformedWages.put("base_period_q4", wages.get("lastQuarterEarnings").asDouble());
+            if (wages.has("annualEarnings")) 
+                transformedWages.put("total_earnings", wages.get("annualEarnings").asDouble());
+            
+            transformedClaim.set("wage_history", transformedWages);
+        }
+        
+        // Status information
+        if (claimNode.has("status")) {
+            ObjectNode transformedStatus = objectMapper.createObjectNode();
+            transformedStatus.put("status_code", claimNode.get("status").asText());
+            
+            if (claimNode.has("submissionTimestamp")) 
+                transformedStatus.put("submission_date", claimNode.get("submissionTimestamp").asText());
+            
+            transformedClaim.set("claim_status", transformedStatus);
+        }
+        
+        // Add processing metadata
+        ObjectNode metadata = objectMapper.createObjectNode();
+        metadata.put("source_system", "claimant-services");
+        metadata.put("received_timestamp", System.currentTimeMillis());
+        transformedClaim.set("metadata", metadata);
+        
+        return objectMapper.writeValueAsString(transformedClaim);
     }
 }
