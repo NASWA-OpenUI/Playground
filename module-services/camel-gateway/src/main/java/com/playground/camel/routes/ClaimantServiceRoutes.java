@@ -8,7 +8,14 @@ public class ClaimantServiceRoutes extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        // Existing GraphQL route for queries
+        // Intercept logic must be defined BEFORE any routes
+        interceptFrom("direct:claimantServiceGraphQL")
+            .choice()
+                .when(simple("${body} contains 'mutation CreateClaim'"))
+                    .wireTap("direct:processClaim")
+                .end();
+                
+        // Now define the routes
         from("direct:claimantServiceGraphQL")
             .routeId("claimant-service-graphql")
             .log("Routing GraphQL request to claimant-services: ${body}")
@@ -17,16 +24,15 @@ public class ClaimantServiceRoutes extends RouteBuilder {
             .setHeader("Accept", constant("application/json"))
             .to("http://claimant-services:3000/graphql")
             .log("Received response from claimant-services");
-            
-        // New route for handling claim submissions via GraphQL mutation
+
+        // New route to receive claims from claimant-services and forward to claims-processing
         from("direct:processClaim")
-            .routeId("process-claim-via-graphql")
-            .log("Processing claim submission via GraphQL: ${body}")
-            // Extract claim data from GraphQL mutation response
-            .bean("dataTransformer", "extractClaimFromGraphQL")
-            // Transform to claims-processing format
-            .bean("dataTransformer", "transformClaimToProcessingFormat")
+            .routeId("process-claim")
+            .log("Received new claim from claimant-services: ${body}")
             .removeHeaders("CamelHttp*")
+            // Transform data from claimant-services format to claims-processing format
+            .bean("dataTransformer", "extractClaimFromGraphQL")
+            .bean("dataTransformer", "transformClaimToProcessingFormat")
             .setHeader("Content-Type", constant("application/json"))
             .setHeader("Accept", constant("application/json"))
             // Forward to the claims-processing service
@@ -43,13 +49,11 @@ public class ClaimantServiceRoutes extends RouteBuilder {
             // Forward all POST requests to the GraphQL endpoint
             .post("/graphql")
                 .description("GraphQL endpoint for Claimant Services")
-                .to("direct:claimantServiceGraphQL");
+                .to("direct:claimantServiceGraphQL")
                 
-        // Add a custom route to intercept createClaim GraphQL mutations
-        interceptFrom("direct:claimantServiceGraphQL")
-            .choice()
-                .when(simple("${body} contains 'mutation CreateClaim'"))
-                    .wireTap("direct:processClaim")
-                .end();
+            // New endpoint to receive claims
+            .post("/claims")
+                .description("Endpoint for receiving new claims from Claimant Services")
+                .to("direct:processClaim");
     }
 }
