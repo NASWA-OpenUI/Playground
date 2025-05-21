@@ -3,6 +3,7 @@ package com.playground.camel.transformers;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +14,13 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.parsers.DocumentBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import java.io.StringWriter;
+import java.io.StringReader;
 import java.util.Iterator;
 import java.util.Map;
+import org.xml.sax.InputSource;
 
 @Component
 public class DataTransformer {
@@ -57,6 +62,97 @@ public class DataTransformer {
         logger.info("Transformed XML: {}", xmlOutput);
         
         return xmlOutput;
+    }
+    
+    /**
+     * Transforms XML data to JSON format
+     * 
+     * @param xmlData The XML data to transform
+     * @return The data in JSON format
+     */
+    public String xmlToJson(String xmlData) throws Exception {
+        logger.info("Transforming XML to JSON: {}", xmlData);
+        
+        // Parse XML
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        InputSource is = new InputSource(new StringReader(xmlData));
+        Document doc = builder.parse(is);
+        
+        // Start with the root element
+        Element rootElement = doc.getDocumentElement();
+        
+        // Create JSON object
+        ObjectNode rootNode = objectMapper.createObjectNode();
+        
+        // Convert XML to JSON
+        processXmlElement(rootElement, rootNode);
+        
+        // Convert to string
+        String jsonOutput = objectMapper.writeValueAsString(rootNode);
+        logger.info("Transformed JSON: {}", jsonOutput);
+        
+        return jsonOutput;
+    }
+    
+    /**
+     * Recursive helper method to process XML elements and convert to JSON
+     */
+    private void processXmlElement(Element element, ObjectNode jsonNode) {
+        // Process attributes
+        if (element.hasAttributes()) {
+            for (int i = 0; i < element.getAttributes().getLength(); i++) {
+                Node attr = element.getAttributes().item(i);
+                jsonNode.put("@" + attr.getNodeName(), attr.getNodeValue());
+            }
+        }
+        
+        // Process child elements
+        NodeList children = element.getChildNodes();
+        
+        // Check if this element has only text content
+        if (children.getLength() == 1 && children.item(0).getNodeType() == Node.TEXT_NODE) {
+            jsonNode.put("#text", element.getTextContent().trim());
+            return;
+        }
+        
+        // Process children elements
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            
+            if (child.getNodeType() == Node.ELEMENT_NODE) {
+                Element childElement = (Element) child;
+                String tagName = childElement.getTagName();
+                
+                // Check if we have multiple elements with the same name (should be an array)
+                boolean isArray = false;
+                for (int j = i + 1; j < children.getLength(); j++) {
+                    if (children.item(j).getNodeType() == Node.ELEMENT_NODE &&
+                            ((Element)children.item(j)).getTagName().equals(tagName)) {
+                        isArray = true;
+                        break;
+                    }
+                }
+                
+                if (isArray) {
+                    // Create or get array node
+                    ArrayNode arrayNode;
+                    if (jsonNode.has(tagName)) {
+                        arrayNode = (ArrayNode) jsonNode.get(tagName);
+                    } else {
+                        arrayNode = jsonNode.putArray(tagName);
+                    }
+                    
+                    // Add this element to the array
+                    ObjectNode childNode = arrayNode.addObject();
+                    processXmlElement(childElement, childNode);
+                } else {
+                    // Regular element
+                    ObjectNode childNode = jsonNode.putObject(tagName);
+                    processXmlElement(childElement, childNode);
+                }
+            }
+        }
     }
     
     /**
