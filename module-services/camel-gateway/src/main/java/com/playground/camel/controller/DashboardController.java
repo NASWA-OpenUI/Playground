@@ -16,4 +16,9 @@ public class DashboardController {
     public String dashboardAlias(Model model) {
         return "dashboard";
     }
+ 
+    @GetMapping("/graphql-tester")
+    public String graphqlTester(Model model) {
+    return "graphql-tester";
+    }
 }
