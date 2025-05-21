@@ -175,6 +175,8 @@ public class DynamicRouteService {
         } catch (Exception e) {
             // Return empty map if template can't be parsed
             return new HashMap<>();
-        }
-    }
+				}
+			}
+		}
+	}
 }
