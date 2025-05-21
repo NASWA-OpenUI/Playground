@@ -118,4 +118,13 @@ public class DataTransformer {
             return isoDate;
         }
     }
+
+    public String extractClaimFromGraphQL(String graphQLResponse) throws Exception {
+        JsonNode responseNode = objectMapper.readTree(graphQLResponse);
+            if (responseNode.has("data") && responseNode.get("data").has("createClaim")) {
+                return objectMapper.writeValueAsString(responseNode.get("data").get("createClaim"));
+        }
+    
+    throw new IllegalArgumentException("Invalid GraphQL response format - cannot extract claim data");
+    }
 }
