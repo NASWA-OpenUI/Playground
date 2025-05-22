@@ -1,101 +1,77 @@
 package com.playground.camel.monitoring;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.playground.camel.model.ServiceRegistration;
+import com.playground.camel.service.ServiceRegistrationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component("healthMonitor")
 public class HealthMonitor {
 
-    private final Map<String, ServiceStatus> serviceStatuses = new ConcurrentHashMap<>();
+    @Autowired
+    private ServiceRegistrationService serviceRegistrationService;
+    
     private final ObjectMapper objectMapper;
 
     // Inject Spring's auto-configured ObjectMapper
     public HealthMonitor(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        // Initialize with placeholder services that we'll connect to later
-        initializePlaceholderServices();
-    }
-
-    private void initializePlaceholderServices() {
-        // Submit Service (to be added later)
-        ServiceStatus submitService = new ServiceStatus(
-            "submit-service",
-            "Submit Service",
-            "Node.js",
-            "GraphQL/JSON",
-            "http://submit-service:3000",
-            ServiceHealth.NOT_CONFIGURED,
-            "Service not configured yet"
-        );
-        serviceStatuses.put("submit-service", submitService);
-
-        // Receive Service (to be added later)
-        ServiceStatus receiveService = new ServiceStatus(
-            "receive-service", 
-            "Receive Service",
-            "Java/Spring",
-            "REST/XML",
-            "http://receive-service:8082",
-            ServiceHealth.NOT_CONFIGURED,
-            "Service not configured yet"
-        );
-        serviceStatuses.put("receive-service", receiveService);
     }
 
     public void checkAllServices() {
-        for (ServiceStatus service : serviceStatuses.values()) {
-            checkServiceHealth(service);
-        }
-    }
-
-    private void checkServiceHealth(ServiceStatus service) {
-        // Only check services that are configured
-        if (service.getHealth() == ServiceHealth.NOT_CONFIGURED) {
-            return;
-        }
-
-        try {
-            // TODO: Implement actual health check calls
-            // For now, just update the timestamp
-            service.setLastChecked(LocalDateTime.now());
-            service.setHealth(ServiceHealth.UNKNOWN);
-            service.setMessage("Health check not yet implemented");
-        } catch (Exception e) {
-            service.setHealth(ServiceHealth.DOWN);
-            service.setMessage("Health check failed: " + e.getMessage());
-            service.setLastChecked(LocalDateTime.now());
-        }
+        // Mark stale services as down based on heartbeat timing
+        serviceRegistrationService.markStaleServicesAsDown();
     }
 
     public String getCurrentStatus() throws Exception {
         Map<String, Object> status = new HashMap<>();
         status.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         status.put("camelStatus", "RUNNING");
-        status.put("activeConnections", countActiveConnections());
-        status.put("services", serviceStatuses);
+        status.put("activeConnections", serviceRegistrationService.countActiveServices());
+        
+        // Get all registered services
+        List<ServiceRegistration> registrations = serviceRegistrationService.getAllServices();
+        Map<String, ServiceStatus> services = new HashMap<>();
+        
+        for (ServiceRegistration reg : registrations) {
+            ServiceStatus serviceStatus = new ServiceStatus(
+                reg.getServiceId(),
+                reg.getName(),
+                reg.getTechnology(),
+                reg.getProtocol(),
+                reg.getEndpoint(),
+                mapHealthStatus(reg.getStatus()),
+                reg.getLastMessage() != null ? reg.getLastMessage() : "Service registered"
+            );
+            serviceStatus.setLastChecked(reg.getLastHeartbeat());
+            services.put(reg.getServiceId(), serviceStatus);
+        }
+        
+        status.put("services", services);
 
         // Now this will use Spring's configured ObjectMapper with LocalDateTime support
         return objectMapper.writeValueAsString(status);
     }
 
-    private int countActiveConnections() {
-        return (int) serviceStatuses.values().stream()
-            .filter(service -> service.getHealth() == ServiceHealth.UP)
-            .count();
+    private ServiceHealth mapHealthStatus(String status) {
+        switch (status.toUpperCase()) {
+            case "UP": return ServiceHealth.UP;
+            case "DOWN": return ServiceHealth.DOWN;
+            default: return ServiceHealth.UNKNOWN;
+        }
     }
 
     public void registerService(String serviceId, String name, String technology, String protocol, String endpoint) {
-        ServiceStatus service = new ServiceStatus(serviceId, name, technology, protocol, endpoint, ServiceHealth.UP, "Recently registered");
-        service.setLastChecked(LocalDateTime.now());
-        serviceStatuses.put(serviceId, service);
+        // This method is now handled by ServiceRegistrationService
+        serviceRegistrationService.registerService(serviceId, name, technology, protocol, endpoint, null);
     }
 
-    // Nested class for service status
+    // Nested class for service status (for compatibility with existing dashboard)
     public static class ServiceStatus {
         private String id;
         private String name;

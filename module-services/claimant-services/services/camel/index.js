@@ -1,208 +1,214 @@
-const Claim = require('../models/Claim');
-const { v4: uuidv4 } = require('uuid');
-const camelService = require('../services/camel');
+const axios = require('axios');
 
-const resolvers = {
-  // Queries
-  getClaim: async ({ claimId }) => {
-    try {
-      const claim = await Claim.findOne({ claimId });
-      if (!claim) {
-        throw new Error(`Claim with ID ${claimId} not found`);
-      }
-      return formatClaim(claim);
-    } catch (error) {
-      console.error('Error fetching claim:', error);
-      throw error;
-    }
-  },
-
-  getClaimsByUser: async ({ userId }) => {
-    try {
-      const claims = await Claim.find({ userId }).sort({ submissionTimestamp: -1 });
-      return claims.map(formatClaim);
-    } catch (error) {
-      console.error('Error fetching claims for user:', error);
-      throw error;
-    }
-  },
-
-  getClaimStatus: async ({ claimId }) => {
-    try {
-      const claim = await Claim.findOne({ claimId });
-      if (!claim) {
-        throw new Error(`Claim with ID ${claimId} not found`);
-      }
-      return claim.status;
-    } catch (error) {
-      console.error('Error fetching claim status:', error);
-      throw error;
-    }
-  },
-
-  health: () => {
-    return `Claimant Services GraphQL API is running - ${new Date().toISOString()}`;
-  },
-
-  // Mutations
-  createClaim: async ({ input }) => {
-    try {
-      // Generate unique IDs
-      const claimId = `CLM-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-      const userId = uuidv4();
-
-      // Create new claim
-      const claim = new Claim({
-        claimId,
-        userId,
-        ...input,
-        status: 'submitted',
-        submissionTimestamp: new Date(),
-        statusHistory: [{
-          status: 'submitted',
-          timestamp: new Date(),
-          notes: 'Claim initially submitted'
-        }]
-      });
-
-      const savedClaim = await claim.save();
-      console.log(`New claim created: ${claimId}`);
-      
-      // Now send the claim to the Camel API Gateway via GraphQL
-      try {
-        const camelResponse = await camelService.sendClaimWithRetry(savedClaim);
+class CamelService {
+    constructor() {
+        this.gatewayUrl = process.env.CAMEL_GRAPHQL_URL || 'http://camel-gateway:8080';
+        this.timeout = parseInt(process.env.CAMEL_TIMEOUT) || 5000;
+        this.retryCount = parseInt(process.env.CAMEL_RETRY_COUNT) || 3;
+        this.serviceName = process.env.SERVICE_NAME || 'claimant-services';
+        this.servicePort = process.env.PORT || 3000;
+        this.isRegistered = false;
         
-        if (camelResponse.success) {
-          console.log(`Successfully forwarded claim ${claimId} to Claims Processing via Camel`);
-          
-          // Optionally update the claim with forwarding status
-          savedClaim.statusHistory.push({
-            status: savedClaim.status,
-            timestamp: new Date(),
-            notes: 'Claim successfully forwarded to Claims Processing'
-          });
-          await savedClaim.save();
-        } else {
-          console.error(`Failed to forward claim ${claimId} to Claims Processing: ${camelResponse.error}`);
-          
-          // Record the failure in the claim history but don't fail the overall operation
-          savedClaim.statusHistory.push({
-            status: savedClaim.status,
-            timestamp: new Date(),
-            notes: `Claim forwarding to Claims Processing failed: ${camelResponse.error}`
-          });
-          await savedClaim.save();
+        console.log(`CamelService initialized with gateway: ${this.gatewayUrl}`);
+    }
+
+    /**
+     * Register this service with the gateway on startup
+     */
+    async registerWithGateway() {
+        const registrationData = {
+            serviceId: this.serviceName,
+            name: 'Claimant Services',
+            technology: 'Node.js + GraphQL',
+            protocol: 'GraphQL',
+            endpoint: `http://${this.serviceName}:${this.servicePort}/graphql`,
+            healthEndpoint: `http://${this.serviceName}:${this.servicePort}/health`
+        };
+
+        try {
+            console.log('Registering with gateway...', registrationData);
+            
+            const response = await axios.post(
+                `${this.gatewayUrl}/api/services/register`,
+                registrationData,
+                {
+                    timeout: this.timeout,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.status === 200 || response.status === 201) {
+                this.isRegistered = true;
+                console.log('✅ Successfully registered with gateway');
+                return { success: true };
+            } else {
+                console.log('⚠️ Unexpected response from gateway:', response.status);
+                return { success: false, error: `Unexpected status: ${response.status}` };
+            }
+        } catch (error) {
+            console.log('❌ Failed to register with gateway:', error.message);
+            return { success: false, error: error.message };
         }
-      } catch (camelError) {
-        console.error(`Error sending claim to Camel: ${camelError.message}`);
-        // We don't want to fail the claim submission if Camel is unavailable,
-        // but we should log the error and record it in the claim history
-        savedClaim.statusHistory.push({
-          status: savedClaim.status,
-          timestamp: new Date(),
-          notes: `Error forwarding claim to Claims Processing: ${camelError.message}`
-        });
-        await savedClaim.save();
-      }
-      
-      return formatClaim(savedClaim);
-    } catch (error) {
-      console.error('Error creating claim:', error);
-      throw new Error(`Failed to create claim: ${error.message}`);
     }
-  },
 
-  updateClaimStatus: async ({ claimId, status, notes }) => {
-    try {
-      const claim = await Claim.findOne({ claimId });
-      if (!claim) {
-        throw new Error(`Claim with ID ${claimId} not found`);
-      }
+    /**
+     * Send heartbeat to gateway to maintain connection status
+     */
+    async sendHeartbeat() {
+        try {
+            const heartbeatData = {
+                serviceId: this.serviceName,
+                timestamp: new Date().toISOString(),
+                status: 'UP'
+            };
 
-      // Validate status
-      const validStatuses = ['submitted', 'processing', 'waitingForEmployer', 'approved', 'denied'];
-      if (!validStatuses.includes(status)) {
-        throw new Error(`Invalid status: ${status}`);
-      }
+            const response = await axios.post(
+                `${this.gatewayUrl}/api/services/heartbeat`,
+                heartbeatData,
+                {
+                    timeout: this.timeout,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
 
-      claim.status = status;
-      if (notes) {
-        claim.statusHistory.push({
-          status,
-          timestamp: new Date(),
-          notes
-        });
-      }
-
-      const updatedClaim = await claim.save();
-      console.log(`Claim ${claimId} status updated to: ${status}`);
-      
-      return formatClaim(updatedClaim);
-    } catch (error) {
-      console.error('Error updating claim status:', error);
-      throw error;
+            if (response.status === 200) {
+                console.log('💓 Heartbeat sent successfully');
+                return { success: true };
+            } else {
+                console.log('⚠️ Heartbeat failed with status:', response.status);
+                return { success: false, error: `Status: ${response.status}` };
+            }
+        } catch (error) {
+            console.log('❌ Heartbeat failed:', error.message);
+            return { success: false, error: error.message };
+        }
     }
-  },
 
-  updateBenefitAmounts: async ({ claimId, weeklyAmount, maximumAmount }) => {
-    try {
-      const claim = await Claim.findOne({ claimId });
-      if (!claim) {
-        throw new Error(`Claim with ID ${claimId} not found`);
-      }
+    /**
+     * Forward a new claim to the gateway for processing
+     */
+    async sendClaimWithRetry(claim) {
+        for (let attempt = 1; attempt <= this.retryCount; attempt++) {
+            try {
+                console.log(`Forwarding claim ${claim.claimId} to gateway (attempt ${attempt}/${this.retryCount})`);
+                
+                const claimData = {
+                    claimId: claim.claimId,
+                    userId: claim.userId,
+                    firstName: claim.firstName,
+                    lastName: claim.lastName,
+                    ssn: claim.ssn,
+                    dateOfBirth: claim.dateOfBirth.toISOString().split('T')[0],
+                    email: claim.email,
+                    phone: claim.phone,
+                    address: claim.address,
+                    employer: claim.employer,
+                    employmentDates: {
+                        startDate: claim.employmentDates.startDate.toISOString().split('T')[0],
+                        endDate: claim.employmentDates.endDate.toISOString().split('T')[0]
+                    },
+                    separationReason: claim.separationReason,
+                    separationDetails: claim.separationDetails || '',
+                    wageData: claim.wageData,
+                    status: claim.status,
+                    submissionTimestamp: claim.submissionTimestamp.toISOString()
+                };
 
-      claim.weeklyBenefitAmount = weeklyAmount;
-      claim.maximumBenefitAmount = maximumAmount;
-      claim.statusHistory.push({
-        status: claim.status,
-        timestamp: new Date(),
-        notes: `Benefit amounts calculated: Weekly $${weeklyAmount}, Maximum $${maximumAmount}`
-      });
+                const response = await axios.post(
+                    `${this.gatewayUrl}/api/submit`,
+                    claimData,
+                    {
+                        timeout: this.timeout,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Source-Service': this.serviceName,
+                            'X-Claim-ID': claim.claimId
+                        }
+                    }
+                );
 
-      const updatedClaim = await claim.save();
-      console.log(`Claim ${claimId} benefit amounts updated: Weekly $${weeklyAmount}, Maximum $${maximumAmount}`);
-      
-      return formatClaim(updatedClaim);
-    } catch (error) {
-      console.error('Error updating benefit amounts:', error);
-      throw error;
+                if (response.status === 200) {
+                    console.log(`✅ Successfully forwarded claim ${claim.claimId} to gateway`);
+                    return { 
+                        success: true, 
+                        response: response.data,
+                        attempt: attempt 
+                    };
+                } else {
+                    console.log(`⚠️ Unexpected response status: ${response.status}`);
+                    if (attempt === this.retryCount) {
+                        return { 
+                            success: false, 
+                            error: `Failed after ${this.retryCount} attempts. Last status: ${response.status}` 
+                        };
+                    }
+                }
+            } catch (error) {
+                console.log(`❌ Attempt ${attempt} failed:`, error.message);
+                
+                if (attempt === this.retryCount) {
+                    return { 
+                        success: false, 
+                        error: `Failed after ${this.retryCount} attempts. Last error: ${error.message}` 
+                    };
+                }
+                
+                // Wait before retrying (exponential backoff)
+                const delay = Math.pow(2, attempt) * 1000;
+                console.log(`⏳ Waiting ${delay}ms before retry...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
     }
-  }
-};
 
-// Helper function to format claim data for GraphQL response
-function formatClaim(claim) {
-  return {
-    id: claim._id.toString(),
-    claimId: claim.claimId,
-    userId: claim.userId,
-    firstName: claim.firstName,
-    lastName: claim.lastName,
-    ssn: claim.ssn,
-    dateOfBirth: claim.dateOfBirth.toISOString().split('T')[0], // Format as YYYY-MM-DD
-    email: claim.email,
-    phone: claim.phone,
-    address: claim.address,
-    employer: claim.employer,
-    employmentDates: {
-      startDate: claim.employmentDates.startDate.toISOString().split('T')[0],
-      endDate: claim.employmentDates.endDate.toISOString().split('T')[0]
-    },
-    separationReason: claim.separationReason,
-    separationDetails: claim.separationDetails || '',
-    wageData: claim.wageData,
-    status: claim.status,
-    statusDisplayName: claim.getStatusDisplayName(),
-    weeklyBenefitAmount: claim.weeklyBenefitAmount,
-    maximumBenefitAmount: claim.maximumBenefitAmount,
-    submissionTimestamp: claim.submissionTimestamp.toISOString(),
-    lastUpdated: claim.lastUpdated.toISOString(),
-    statusHistory: claim.statusHistory.map(entry => ({
-      status: entry.status,
-      timestamp: entry.timestamp.toISOString(),
-      notes: entry.notes || ''
-    }))
-  };
+    /**
+     * Start the heartbeat interval
+     */
+    startHeartbeat() {
+        // Send heartbeat every 30 seconds
+        const heartbeatInterval = 30000;
+        
+        setInterval(async () => {
+            if (this.isRegistered) {
+                await this.sendHeartbeat();
+            }
+        }, heartbeatInterval);
+        
+        console.log(`💓 Heartbeat started (every ${heartbeatInterval}ms)`);
+    }
+
+    /**
+     * Initialize connection with gateway
+     */
+    async initialize() {
+        console.log('🚀 Initializing gateway connection...');
+        
+        // Register with gateway
+        const registrationResult = await this.registerWithGateway();
+        
+        if (registrationResult.success) {
+            // Start heartbeat
+            this.startHeartbeat();
+            
+            // Send initial heartbeat
+            setTimeout(() => {
+                this.sendHeartbeat();
+            }, 2000);
+        } else {
+            console.log('⚠️ Gateway registration failed, will retry in 30 seconds');
+            // Retry registration after 30 seconds
+            setTimeout(() => {
+                this.initialize();
+            }, 30000);
+        }
+    }
 }
 
-module.exports = resolvers;
+// Create singleton instance
+const camelService = new CamelService();
+
+module.exports = camelService;

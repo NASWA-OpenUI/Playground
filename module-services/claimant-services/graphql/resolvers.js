@@ -1,5 +1,6 @@
 const Claim = require('../models/Claim');
 const { v4: uuidv4 } = require('uuid');
+const camelService = require('../services/camel');
 
 const resolvers = {
   // Queries
@@ -65,15 +66,49 @@ const resolvers = {
       });
 
       const savedClaim = await claim.save();
-      console.log(`New claim created: ${claimId}`);
+      console.log(`✅ New claim created: ${claimId}`);
       
-      // Here we would typically notify the Claims Processing service
-      // For now, we'll just log it
-      console.log(`Claim ${claimId} ready for processing`);
+      // Now send the claim to the Camel API Gateway
+      try {
+        console.log(`🔄 Forwarding claim ${claimId} to gateway...`);
+        const camelResponse = await camelService.sendClaimWithRetry(savedClaim);
+        
+        if (camelResponse.success) {
+          console.log(`✅ Successfully forwarded claim ${claimId} to Claims Processing via gateway`);
+          
+          // Update the claim with forwarding status
+          savedClaim.statusHistory.push({
+            status: savedClaim.status,
+            timestamp: new Date(),
+            notes: 'Claim successfully forwarded to Claims Processing via gateway'
+          });
+          await savedClaim.save();
+        } else {
+          console.error(`❌ Failed to forward claim ${claimId} to gateway: ${camelResponse.error}`);
+          
+          // Record the failure in the claim history but don't fail the overall operation
+          savedClaim.statusHistory.push({
+            status: savedClaim.status,
+            timestamp: new Date(),
+            notes: `Gateway forwarding failed: ${camelResponse.error}`
+          });
+          await savedClaim.save();
+        }
+      } catch (camelError) {
+        console.error(`❌ Error sending claim to gateway: ${camelError.message}`);
+        // We don't want to fail the claim submission if gateway is unavailable,
+        // but we should log the error and record it in the claim history
+        savedClaim.statusHistory.push({
+          status: savedClaim.status,
+          timestamp: new Date(),
+          notes: `Gateway communication error: ${camelError.message}`
+        });
+        await savedClaim.save();
+      }
       
       return formatClaim(savedClaim);
     } catch (error) {
-      console.error('Error creating claim:', error);
+      console.error('❌ Error creating claim:', error);
       throw new Error(`Failed to create claim: ${error.message}`);
     }
   },
@@ -101,11 +136,11 @@ const resolvers = {
       }
 
       const updatedClaim = await claim.save();
-      console.log(`Claim ${claimId} status updated to: ${status}`);
+      console.log(`✅ Claim ${claimId} status updated to: ${status}`);
       
       return formatClaim(updatedClaim);
     } catch (error) {
-      console.error('Error updating claim status:', error);
+      console.error('❌ Error updating claim status:', error);
       throw error;
     }
   },
@@ -126,11 +161,11 @@ const resolvers = {
       });
 
       const updatedClaim = await claim.save();
-      console.log(`Claim ${claimId} benefit amounts updated: Weekly $${weeklyAmount}, Maximum $${maximumAmount}`);
+      console.log(`✅ Claim ${claimId} benefit amounts updated: Weekly $${weeklyAmount}, Maximum $${maximumAmount}`);
       
       return formatClaim(updatedClaim);
     } catch (error) {
-      console.error('Error updating benefit amounts:', error);
+      console.error('❌ Error updating benefit amounts:', error);
       throw error;
     }
   }
