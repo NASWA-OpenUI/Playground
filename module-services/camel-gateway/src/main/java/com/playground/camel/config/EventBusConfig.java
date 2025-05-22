@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.connection.CachingConnectionFactory;
 
-import javax.jms.ConnectionFactory;
+import jakarta.jms.ConnectionFactory; // Use jakarta, not javax
 
 @Configuration
 public class EventBusConfig {
