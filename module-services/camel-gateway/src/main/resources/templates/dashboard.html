@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apache Camel Integration Hub - Health Dashboard</title>
+    <title>Apache Camel Integration Hub - Overview</title>
     <style>
         * {
             margin: 0;
@@ -75,7 +75,7 @@
             padding: 0 1rem;
         }
 
-        .services-grid {
+        .services-grid, .claims-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 1.5rem;
@@ -106,6 +106,7 @@
             transition: all 0.2s;
             border: none;
             outline: none;
+            text-decoration: none;
         }
 
         .btn-primary {
@@ -126,15 +127,6 @@
             background: #2b9348;
         }
 
-        .btn-danger {
-            background: #fa5252;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #e03131;
-        }
-
         .btn-secondary {
             background: #adb5bd;
             color: white;
@@ -144,7 +136,7 @@
             background: #868e96;
         }
 
-        .service-card {
+        .service-card, .claim-card {
             background: white;
             border-radius: 10px;
             padding: 1.5rem;
@@ -153,7 +145,7 @@
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .service-card:hover {
+        .service-card:hover, .claim-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
@@ -174,20 +166,44 @@
             border-left-color: #95a5a6;
         }
 
-        .service-header {
+        .claim-card.received {
+            border-left-color: #3498db;
+        }
+
+        .claim-card.awaiting_employer {
+            border-left-color: #f39c12;
+        }
+
+        .claim-card.awaiting_tax_calc {
+            border-left-color: #9b59b6;
+        }
+
+        .claim-card.approved {
+            border-left-color: #27ae60;
+        }
+
+        .claim-card.denied {
+            border-left-color: #e74c3c;
+        }
+
+        .claim-card.error {
+            border-left-color: #e74c3c;
+        }
+
+        .service-header, .claim-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
 
-        .service-name {
+        .service-name, .claim-name {
             font-size: 1.3rem;
             font-weight: bold;
             color: #2c3e50;
         }
 
-        .service-status {
+        .service-status, .claim-status {
             padding: 0.3rem 0.8rem;
             border-radius: 20px;
             font-size: 0.8rem;
@@ -196,7 +212,7 @@
             letter-spacing: 0.5px;
         }
 
-        .service-status.up {
+        .service-status.up, .claim-status.received {
             background: #d4edda;
             color: #155724;
         }
@@ -211,12 +227,27 @@
             color: #856404;
         }
 
-        .service-status.not-configured {
-            background: #e9ecef;
-            color: #495057;
+        .claim-status.awaiting_employer {
+            background: #fff3cd;
+            color: #856404;
         }
 
-        .service-details {
+        .claim-status.awaiting_tax_calc {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .claim-status.approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .claim-status.denied, .claim-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .service-details, .claim-details {
             margin: 1rem 0;
         }
 
@@ -242,7 +273,7 @@
             word-break: break-all;
         }
 
-        .service-message {
+        .service-message, .claim-message {
             margin-top: 1rem;
             padding: 0.8rem;
             background: #f8f9fa;
@@ -325,6 +356,20 @@
             display: block;
         }
 
+        .refresh-btn {
+            background: #4c6ef5;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn:hover {
+            background: #3b5bdb;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2rem;
@@ -335,7 +380,7 @@
                 margin: 1rem;
             }
             
-            .services-grid {
+            .services-grid, .claims-grid {
                 grid-template-columns: 1fr;
                 gap: 1rem;
                 margin: 1rem 0;
@@ -350,7 +395,7 @@
 <body>
     <div class="header">
         <h1>Apache Camel Integration Hub</h1>
-        <p>Real-time Service Health Monitoring Dashboard</p>
+        <p>Real-time Service Health & Claims Processing Dashboard</p>
     </div>
 
     <div class="status-bar">
@@ -367,6 +412,10 @@
             <div class="status-value" id="total-services">-</div>
         </div>
         <div class="status-item">
+            <div class="status-label">Total Claims</div>
+            <div class="status-value" id="total-claims">-</div>
+        </div>
+        <div class="status-item">
             <div class="status-label">Last Health Check</div>
             <div class="status-value" id="last-check">-</div>
         </div>
@@ -376,13 +425,31 @@
         <div class="tab-container">
             <div class="tab-nav">
                 <button class="tab-btn active" data-tab="services-tab">Connected Services</button>
+                <button class="tab-btn" data-tab="claims-tab">Claims Processing</button>
             </div>
 
             <div class="tab-content active" id="services-tab">
+                <div class="section-header">
+                    <h2 class="section-title">Connected Services</h2>
+                    <button class="refresh-btn" onclick="updateDashboard()">Refresh Status</button>
+                </div>
                 <div id="services-container" class="services-grid">
                     <div class="loading pulse">
                         <h3>Loading service status...</h3>
                         <p>Connecting to health monitoring system</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="claims-tab">
+                <div class="section-header">
+                    <h2 class="section-title">Claims Processing Queue</h2>
+                    <button class="refresh-btn" onclick="updateClaimsData()">Refresh Claims</button>
+                </div>
+                <div id="claims-container" class="claims-grid">
+                    <div class="loading pulse">
+                        <h3>Loading claims data...</h3>
+                        <p>Fetching claims from processing queue</p>
                     </div>
                 </div>
             </div>
@@ -394,11 +461,33 @@
     </div>
 
     <div class="footer">
-        <p>&copy; 2025 - NASWA Open UI | Apache Camel Integration Hub | Health Dashboard v1.0</p>
+        <p>&copy; 2025 - NASWA Open UI | Apache Camel Integration Hub | Health Dashboard v2.0</p>
     </div>
 
     <script>
         let lastUpdateTime = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                
+                // Update active tab button
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Show target tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(targetTab).classList.add('active');
+                
+                // Load data for the active tab
+                if (targetTab === 'claims-tab') {
+                    updateClaimsData();
+                }
+            });
+        });
 
         function updateDashboard() {
             fetch('/api/health/services')
@@ -412,10 +501,7 @@
                     updateStatusBar(data);
                     updateServicesGrid(data.services);
                     lastUpdateTime = new Date();
-                    const lastUpdatedElement = document.getElementById('last-updated-time');
-                    if (lastUpdatedElement) {
-                        lastUpdatedElement.textContent = `Last updated: ${lastUpdateTime.toLocaleTimeString()}`;
-                    }
+                    updateLastUpdatedTime();
                 })
                 .catch(error => {
                     console.error('Error fetching status:', error);
@@ -424,6 +510,34 @@
                         container.innerHTML = `
                             <div class="loading">
                                 <h3>Unable to connect to health monitoring</h3>
+                                <p>Error: ${error.message}</p>
+                            </div>
+                        `;
+                    }
+                });
+        }
+
+        function updateClaimsData() {
+            fetch('/api/claims')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(claims => {
+                    updateClaimsGrid(claims);
+                    updateClaimsCount(claims.length);
+                    lastUpdateTime = new Date();
+                    updateLastUpdatedTime();
+                })
+                .catch(error => {
+                    console.error('Error fetching claims:', error);
+                    const container = document.getElementById('claims-container');
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="loading">
+                                <h3>Unable to connect to claims database</h3>
                                 <p>Error: ${error.message}</p>
                             </div>
                         `;
@@ -448,6 +562,13 @@
                     hour: '2-digit',
                     minute: '2-digit'
                 });
+            }
+        }
+
+        function updateClaimsCount(count) {
+            const totalClaimsElement = document.getElementById('total-claims');
+            if (totalClaimsElement) {
+                totalClaimsElement.textContent = count;
             }
         }
 
@@ -499,6 +620,71 @@
             }).join('');
 
             document.getElementById('services-container').innerHTML = servicesHtml;
+        }
+
+        function updateClaimsGrid(claims) {
+            if (!claims || claims.length === 0) {
+                document.getElementById('claims-container').innerHTML = `
+                    <div class="loading">
+                        <h3>No claims in processing queue</h3>
+                        <p>Claims will appear here as they are submitted through connected services</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const claimsHtml = claims.map(claim => {
+                const statusClass = claim.statusCode.toLowerCase();
+                const receivedTime = new Date(claim.receivedTimestamp).toLocaleString();
+                const lastUpdated = new Date(claim.lastUpdated).toLocaleString();
+
+                return `
+                    <div class="claim-card ${statusClass}">
+                        <div class="claim-header">
+                            <div class="claim-name">${claim.firstName} ${claim.lastName}</div>
+                            <div class="claim-status ${statusClass}">${claim.statusDisplayName || claim.statusCode}</div>
+                        </div>
+                        <div class="claim-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Claim ID</div>
+                                <div class="detail-value">${claim.claimReferenceId}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Source System</div>
+                                <div class="detail-value">${claim.sourceSystem}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Employer</div>
+                                <div class="detail-value">${claim.employerName || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Workflow Stage</div>
+                                <div class="detail-value">${claim.workflowStage}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Received</div>
+                                <div class="detail-value">${receivedTime}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Last Updated</div>
+                                <div class="detail-value">${lastUpdated}</div>
+                            </div>
+                        </div>
+                        <div class="claim-message">
+                            ${claim.processingNotes || 'Claim received and ready for processing'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('claims-container').innerHTML = claimsHtml;
+        }
+
+        function updateLastUpdatedTime() {
+            const lastUpdatedElement = document.getElementById('last-updated-time');
+            if (lastUpdatedElement && lastUpdateTime) {
+                lastUpdatedElement.textContent = `Last updated: ${lastUpdateTime.toLocaleTimeString()}`;
+            }
         }
 
         // Initial load
