@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -19,6 +21,8 @@ import java.util.Map;
 @RequestMapping("/api")
 @CrossOrigin(origins = "*")
 public class IntegrationController {
+
+    private static final Logger logger = LoggerFactory.getLogger(IntegrationController.class);
 
     @Autowired
     private CamelContext camelContext;
@@ -36,6 +40,7 @@ public class IntegrationController {
                 consumes = MediaType.APPLICATION_JSON_VALUE,
                 produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> submitData(@RequestBody String jsonData) {
+        logger.info("📥 Received submission request");
         try {
             // Send the request to our Camel route for processing
             String result = producerTemplate.requestBody("direct:processSubmission", jsonData, String.class);
@@ -46,8 +51,10 @@ public class IntegrationController {
             response.put("result", result);
             response.put("timestamp", LocalDateTime.now());
             
+            logger.info("✅ Submission processed successfully");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            logger.error("❌ Submission processing failed", e);
             // Return a proper Map object for errors too
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Processing failed");
@@ -60,13 +67,14 @@ public class IntegrationController {
 
     @GetMapping(value = "/health/services", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> getServiceHealth() {
+        logger.debug("🔍 Health check requested");
         try {
             // Get the current service status directly from HealthMonitor
             String status = healthMonitor.getCurrentStatus();
             
             return ResponseEntity.ok(status);
         } catch (Exception e) {
-            e.printStackTrace(); // This will show in the logs
+            logger.error("❌ Health check failed", e);
             
             // Create error response as Map, then convert to JSON
             Map<String, Object> errorResponse = new HashMap<>();
@@ -82,6 +90,7 @@ public class IntegrationController {
 
     @GetMapping(value = "/health/camel", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> getCamelHealth() {
+        logger.debug("🔍 Camel health check requested");
         try {
             boolean isStarted = camelContext.getStatus().isStarted();
             int routeCount = camelContext.getRoutes().size();
@@ -95,7 +104,7 @@ public class IntegrationController {
             
             return ResponseEntity.ok(healthInfo);
         } catch (Exception e) {
-            e.printStackTrace(); // This will show in the logs
+            logger.error("❌ Camel health check failed", e);
             
             // Return a proper Map object for errors
             Map<String, Object> errorResponse = new HashMap<>();
@@ -107,11 +116,14 @@ public class IntegrationController {
         }
     }
 
-    // NEW: Service registration endpoints (moved here from separate controller for simplicity)
+    // Service registration endpoints
     @PostMapping(value = "/services/register", 
                 consumes = MediaType.APPLICATION_JSON_VALUE,
                 produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> registerService(@RequestBody Map<String, Object> registrationData) {
+        logger.info("📝 Service registration request received");
+        logger.info("📝 Registration data: {}", registrationData);
+        
         try {
             String serviceId = (String) registrationData.get("serviceId");
             String name = (String) registrationData.get("name");
@@ -120,10 +132,11 @@ public class IntegrationController {
             String endpoint = (String) registrationData.get("endpoint");
             String healthEndpoint = (String) registrationData.get("healthEndpoint");
 
-            System.out.println("📝 Received service registration: " + serviceId);
+            logger.info("📝 Processing registration for service: {}", serviceId);
 
             // Validate required fields
             if (serviceId == null || name == null || technology == null || protocol == null || endpoint == null) {
+                logger.error("❌ Missing required fields in registration");
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("success", false);
                 errorResponse.put("error", "Missing required fields: serviceId, name, technology, protocol, endpoint");
@@ -134,7 +147,7 @@ public class IntegrationController {
                 serviceId, name, technology, protocol, endpoint, healthEndpoint
             );
 
-            System.out.println("✅ Service registered successfully: " + serviceId);
+            logger.info("✅ Service registered successfully: {} -> {}", serviceId, registration.getId());
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -145,8 +158,7 @@ public class IntegrationController {
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("❌ Service registration failed: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("❌ Service registration failed", e);
             
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -160,13 +172,14 @@ public class IntegrationController {
                 consumes = MediaType.APPLICATION_JSON_VALUE,
                 produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> receiveHeartbeat(@RequestBody Map<String, Object> heartbeatData) {
+        logger.debug("💓 Heartbeat received: {}", heartbeatData);
+        
         try {
             String serviceId = (String) heartbeatData.get("serviceId");
             String status = (String) heartbeatData.getOrDefault("status", "UP");
 
-            System.out.println("💓 Received heartbeat from: " + serviceId);
-
             if (serviceId == null) {
+                logger.error("❌ Missing serviceId in heartbeat");
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("success", false);
                 errorResponse.put("error", "Missing serviceId in heartbeat");
@@ -184,12 +197,11 @@ public class IntegrationController {
                 
                 return ResponseEntity.ok(response);
             } else {
-                System.err.println("⚠️ Heartbeat for unknown service: " + serviceId);
+                logger.warn("⚠️ Heartbeat for unknown service: {}", serviceId);
                 return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            System.err.println("❌ Heartbeat processing failed: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("❌ Heartbeat processing failed", e);
             
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
@@ -201,11 +213,25 @@ public class IntegrationController {
 
     @GetMapping(value = "/services", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<ServiceRegistration>> getAllServices() {
+        logger.debug("🔍 Services list requested");
         try {
             List<ServiceRegistration> services = serviceRegistrationService.getAllServices();
+            logger.debug("📋 Returning {} services", services.size());
             return ResponseEntity.ok(services);
         } catch (Exception e) {
+            logger.error("❌ Failed to get services list", e);
             return ResponseEntity.status(500).build();
         }
+    }
+
+    // Add a simple test endpoint to verify the controller is working
+    @GetMapping(value = "/test", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> testEndpoint() {
+        logger.info("🧪 Test endpoint called");
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "OK");
+        response.put("message", "Integration Controller is working");
+        response.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.ok(response);
     }
 }

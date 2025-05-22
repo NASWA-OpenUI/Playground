@@ -14,6 +14,8 @@ public class RestConfig extends RouteBuilder {
             .component("servlet")
             .bindingMode(RestBindingMode.json)
             .dataFormatProperty("prettyPrint", "true")
-            .contextPath("/api"); // Base path for REST endpoints
+            .contextPath("/") // Changed from "/api" to "/" 
+            .host("0.0.0.0")
+            .port("8080");
     }
 }
