@@ -292,107 +292,6 @@
             margin-top: 3rem;
         }
 
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            overflow: auto;
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 2rem;
-            border-radius: 10px;
-            width: 80%;
-            max-width: 700px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-
-        .close {
-            position: absolute;
-            top: 1rem;
-            right: 1.5rem;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #aaa;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: #333;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #333;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-
-        .form-control:focus {
-            border-color: #4c6ef5;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.2);
-        }
-
-        .text-area {
-            min-height: 120px;
-            font-family: monospace;
-        }
-
-        .action-buttons {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 1.5rem;
-            gap: 1rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-left: 0.5rem;
-        }
-
-        .badge-success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .badge-secondary {
-            background: #e9ecef;
-            color: #495057;
-        }
-
-        .interface-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
         .tab-container {
             margin-top: 2rem;
         }
@@ -445,11 +344,6 @@
             .container {
                 padding: 0 0.5rem;
             }
-            
-            .modal-content {
-                width: 95%;
-                margin: 5% auto;
-            }
         }
     </style>
 </head>
@@ -482,7 +376,6 @@
         <div class="tab-container">
             <div class="tab-nav">
                 <button class="tab-btn active" data-tab="services-tab">Connected Services</button>
-                <button class="tab-btn" data-tab="interfaces-tab">Interface Management</button>
             </div>
 
             <div class="tab-content active" id="services-tab">
@@ -493,78 +386,10 @@
                     </div>
                 </div>
             </div>
-
-            <div class="tab-content" id="interfaces-tab">
-                <div class="section-header">
-                    <h2 class="section-title">Interface Management</h2>
-                    <button class="btn btn-primary" id="add-interface-btn">Add New Interface</button>
-                </div>
-                <div id="interfaces-container" class="services-grid">
-                    <div class="loading pulse">
-                        <h3>Loading interfaces...</h3>
-                        <p>Retrieving interface configurations</p>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="last-updated">
             <span id="last-updated-time">Never</span>
-        </div>
-    </div>
-
-    <!-- Add Interface Modal -->
-    <div id="interface-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="modal-title">Add New Interface</h2>
-            
-            <form id="interface-form">
-                <input type="hidden" id="interface-id">
-                
-                <div class="form-group">
-                    <label for="name" class="form-label">Interface Name</label>
-                    <input type="text" id="name" name="name" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="protocol" class="form-label">Protocol</label>
-                    <select id="protocol" name="protocol" class="form-control" required>
-                        <option value="">-- Select Protocol --</option>
-                        <option value="REST">REST</option>
-                        <option value="SOAP">SOAP</option>
-                        <option value="GRAPHQL">GraphQL</option>
-                        <option value="GRPC">gRPC</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="endpoint" class="form-label">Endpoint Path</label>
-                    <input type="text" id="endpoint" name="endpoint" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea id="description" name="description" class="form-control"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="template" class="form-label">Configuration Template</label>
-                    <textarea id="template" name="template" class="form-control text-area"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">
-                        <input type="checkbox" id="active" name="active">
-                        Activate interface immediately
-                    </label>
-                </div>
-                
-                <div class="action-buttons">
-                    <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="save-btn">Save Interface</button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -574,63 +399,6 @@
 
     <script>
         let lastUpdateTime = null;
-        let interfaceTemplates = {
-            REST: `{
-  "component": "rest",
-  "path": "/api/rest",
-  "methods": ["GET", "POST", "PUT", "DELETE"],
-  "consumes": "application/json",
-  "produces": "application/json",
-  "errorHandler": true
-}`,
-            SOAP: `{
-  "component": "spring-ws",
-  "path": "/api/soap",
-  "wsdlLocation": "classpath:wsdl/default-service.wsdl",
-  "errorHandler": true
-}`,
-            GRAPHQL: `{
-  "component": "graphql",
-  "path": "/api/graphql",
-  "schemaLocation": "classpath:graphql/schema.graphqls",
-  "errorHandler": true
-}`,
-            GRPC: `{
-  "component": "grpc",
-  "path": "/api/grpc",
-  "host": "0.0.0.0",
-  "port": "50051",
-  "protoLocation": "classpath:proto/service.proto",
-  "errorHandler": true
-}`
-        };
-
-        // Tab navigation
-        document.querySelectorAll('.tab-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                // Hide all tab contents
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
-                
-                // Deactivate all tab buttons
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                
-                // Activate the clicked tab button
-                button.classList.add('active');
-                
-                // Show the corresponding tab content
-                const tabId = button.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
-
-                // If interfaces tab is selected, load interfaces
-                if (tabId === 'interfaces-tab') {
-                    loadInterfaces();
-                }
-            });
-        });
 
         function updateDashboard() {
             fetch('/api/health/services')
@@ -733,312 +501,22 @@
             document.getElementById('services-container').innerHTML = servicesHtml;
         }
 
-        // Interface management
-        function loadInterfaces() {
-            fetch('/api/interfaces')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(interfaces => {
-                    updateInterfacesGrid(interfaces);
-                })
-                .catch(error => {
-                    console.error('Error fetching interfaces:', error);
-                    document.getElementById('interfaces-container').innerHTML = `
-                        <div class="loading">
-                            <h3>Unable to load interfaces</h3>
-                            <p>Error: ${error.message}</p>
-                        </div>
-                    `;
-                });
-        }
+        // Initial load
+        updateDashboard();
 
-        function updateInterfacesGrid(interfaces) {
-            if (!interfaces || interfaces.length === 0) {
-                document.getElementById('interfaces-container').innerHTML = `
-                    <div class="loading">
-                        <h3>No interfaces configured yet</h3>
-                        <p>Use the "Add New Interface" button to create your first interface</p>
-                    </div>
-                `;
-                return;
-            }
+        // Update every 30 seconds
+        setInterval(updateDashboard, 30000);
 
-            const interfacesHtml = interfaces.map(iface => {
-                const statusBadge = iface.active
-                    ? '<span class="badge badge-success">Active</span>'
-                    : '<span class="badge badge-secondary">Inactive</span>';
-
-                return `
-                    <div class="service-card">
-                        <div class="service-header">
-                            <div class="service-name">${iface.name} ${statusBadge}</div>
-                        </div>
-                        <div class="service-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Protocol</div>
-                                <div class="detail-value">${iface.protocol}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Endpoint</div>
-                                <div class="detail-value">${iface.endpoint}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Created</div>
-                                <div class="detail-value">${new Date(iface.creationDate).toLocaleString()}</div>
-                            </div>
-                        </div>
-                        <div class="service-message">
-                            ${iface.description || 'No description provided'}
-                        </div>
-                        <div class="interface-actions">
-                            <button onclick="editInterface(${iface.id})" class="btn btn-secondary">Edit</button>
-                            ${iface.active
-                                ? `<button onclick="deactivateInterface(${iface.id})" class="btn btn-danger">Deactivate</button>`
-                                : `<button onclick="activateInterface(${iface.id})" class="btn btn-success">Activate</button>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('interfaces-container').innerHTML = interfacesHtml;
-        }
-
-        // Modal handling
-        const modal = document.getElementById('interface-modal');
-        const addInterfaceBtn = document.getElementById('add-interface-btn');
-        const closeBtn = document.querySelector('.close');
-        const cancelBtn = document.getElementById('cancel-btn');
-        const interfaceForm = document.getElementById('interface-form');
-        const protocolSelect = document.getElementById('protocol');
-        const templateArea = document.getElementById('template');
-
-        addInterfaceBtn.addEventListener('click', () => {
-            document.getElementById('modal-title').textContent = 'Add New Interface';
-            document.getElementById('interface-id').value = '';
-            interfaceForm.reset();
-            modal.style.display = 'block';
-        });
-
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-
-        cancelBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-
-        window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-
-        protocolSelect.addEventListener('change', () => {
-            const selectedProtocol = protocolSelect.value;
-            if (selectedProtocol && interfaceTemplates[selectedProtocol]) {
-                templateArea.value = interfaceTemplates[selectedProtocol];
-                
-                // Also update the endpoint based on protocol
-                const endpointInput = document.getElementById('endpoint');
-                if (endpointInput.value === '' || endpointInput.value.startsWith('/api/')) {
-                    endpointInput.value = `/api/${selectedProtocol.toLowerCase()}`;
-                }
-            }
-        });
-
-        interfaceForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            
-            const interfaceData = {
-                name: document.getElementById('name').value,
-                protocol: document.getElementById('protocol').value,
-                endpoint: document.getElementById('endpoint').value,
-                description: document.getElementById('description').value,
-                template: document.getElementById('template').value,
-                active: document.getElementById('active').checked
-            };
-            
-            const interfaceId = document.getElementById('interface-id').value;
-            
-            if (interfaceId) {
-                // Update existing interface
-                interfaceData.id = interfaceId;
-                updateInterfaceConfig(interfaceId, interfaceData);
-            } else {
-                // Create new interface
-                createInterfaceConfig(interfaceData);
-            }
-        });
-
-        function createInterfaceConfig(interfaceData) {
-            fetch('/api/interfaces', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(interfaceData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                modal.style.display = 'none';
-                loadInterfaces();
-                showAlert('Interface created successfully!', 'success');
-            })
-            .catch(error => {
-                console.error('Error creating interface:', error);
-                showAlert('Error creating interface: ' + error.message, 'error');
+        // Add some visual feedback when updating
+        setInterval(() => {
+            const statusItems = document.querySelectorAll('.status-value');
+            statusItems.forEach(item => {
+                item.style.opacity = '0.6';
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                }, 200);
             });
-        }
-
-        function updateInterfaceConfig(id, interfaceData) {
-            fetch(`/api/interfaces/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(interfaceData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                modal.style.display = 'none';
-                loadInterfaces();
-                showAlert('Interface updated successfully!', 'success');
-            })
-            .catch(error => {
-                console.error('Error updating interface:', error);
-                showAlert('Error updating interface: ' + error.message, 'error');
-            });
-        }
-
-        function activateInterface(id) {
-            fetch(`/api/interfaces/${id}/activate`, {
-                method: 'POST'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                loadInterfaces();
-                showAlert('Interface activated successfully!', 'success');
-            })
-            .catch(error => {
-                console.error('Error activating interface:', error);
-                showAlert('Error activating interface: ' + error.message, 'error');
-            });
-        }
-
-        function deactivateInterface(id) {
-            fetch(`/api/interfaces/${id}/deactivate`, {
-                method: 'POST'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                loadInterfaces();
-                showAlert('Interface deactivated successfully!', 'success');
-            })
-            .catch(error => {
-                console.error('Error deactivating interface:', error);
-                showAlert('Error deactivating
-<!--THIS is where the break occurred-->
-                    loadInterfaces();
-               showAlert('Interface deactivated successfully!', 'success');
-           })
-           .catch(error => {
-               console.error('Error deactivating interface:', error);
-               showAlert('Error deactivating interface: ' + error.message, 'error');
-           });
-       }
-
-       function editInterface(id) {
-           fetch(`/api/interfaces/${id}`)
-               .then(response => {
-                   if (!response.ok) {
-                       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                   }
-                   return response.json();
-               })
-               .then(iface => {
-                   document.getElementById('modal-title').textContent = 'Edit Interface';
-                   document.getElementById('interface-id').value = iface.id;
-                   document.getElementById('name').value = iface.name;
-                   document.getElementById('protocol').value = iface.protocol;
-                   document.getElementById('endpoint').value = iface.endpoint;
-                   document.getElementById('description').value = iface.description || '';
-                   document.getElementById('template').value = iface.template || '';
-                   document.getElementById('active').checked = iface.active;
-                   
-                   modal.style.display = 'block';
-               })
-               .catch(error => {
-                   console.error('Error fetching interface:', error);
-                   showAlert('Error editing interface: ' + error.message, 'error');
-               });
-       }
-
-       function showAlert(message, type) {
-           const alertDiv = document.createElement('div');
-           alertDiv.style.position = 'fixed';
-           alertDiv.style.top = '20px';
-           alertDiv.style.left = '50%';
-           alertDiv.style.transform = 'translateX(-50%)';
-           alertDiv.style.padding = '1rem 2rem';
-           alertDiv.style.borderRadius = '5px';
-           alertDiv.style.fontWeight = 'bold';
-           alertDiv.style.zIndex = '2000';
-           
-           if (type === 'success') {
-               alertDiv.style.backgroundColor = '#d4edda';
-               alertDiv.style.color = '#155724';
-           } else {
-               alertDiv.style.backgroundColor = '#f8d7da';
-               alertDiv.style.color = '#721c24';
-           }
-           
-           alertDiv.textContent = message;
-           document.body.appendChild(alertDiv);
-           
-           setTimeout(() => {
-               alertDiv.style.opacity = '0';
-               alertDiv.style.transition = 'opacity 0.5s';
-               setTimeout(() => {
-                   document.body.removeChild(alertDiv);
-               }, 500);
-           }, 3000);
-       }
-
-       // Initial load
-       updateDashboard();
-
-       // Update every 30 seconds
-       setInterval(updateDashboard, 30000);
-
-       // Add some visual feedback when updating
-       setInterval(() => {
-           const statusItems = document.querySelectorAll('.status-value');
-           statusItems.forEach(item => {
-               item.style.opacity = '0.6';
-               setTimeout(() => {
-                   item.style.opacity = '1';
-               }, 200);
-           });
-       }, 30000);
-   </script>
+        }, 30000);
+    </script>
 </body>
 </html>
