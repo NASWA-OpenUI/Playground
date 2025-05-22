@@ -20,6 +20,8 @@ public class ClaimService {
 
     @Autowired
     private ClaimRepository claimRepository;
+    
+    @Autowired
     private EventPublisher eventPublisher;
 
     /**
