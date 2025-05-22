@@ -89,13 +89,15 @@ class CamelService {
     }
 
     /**
-     * Forward a new claim to the gateway for processing
+     * Send claim to gateway using natural claimant-services format
+     * This replaces the old sendClaimWithRetry method
      */
-    async sendClaimWithRetry(claim) {
+    async sendClaimToGateway(claim) {
         for (let attempt = 1; attempt <= this.retryCount; attempt++) {
             try {
-                console.log(`Forwarding claim ${claim.claimId} to gateway (attempt ${attempt}/${this.retryCount})`);
+                console.log(`Sending claim ${claim.claimId} to gateway (attempt ${attempt}/${this.retryCount})`);
                 
+                // Send the claim in its natural format - let Camel handle the transformation
                 const claimData = {
                     claimId: claim.claimId,
                     userId: claim.userId,
@@ -132,7 +134,7 @@ class CamelService {
                 );
 
                 if (response.status === 200) {
-                    console.log(`✅ Successfully forwarded claim ${claim.claimId} to gateway`);
+                    console.log(`✅ Successfully sent claim ${claim.claimId} to gateway`);
                     return { 
                         success: true, 
                         response: response.data,

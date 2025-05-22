@@ -68,29 +68,29 @@ const resolvers = {
       const savedClaim = await claim.save();
       console.log(`✅ New claim created: ${claimId}`);
       
-      // Now send the claim to the Camel API Gateway
+      // Now send the claim to the Camel Gateway using natural claimant-services format
       try {
-        console.log(`🔄 Forwarding claim ${claimId} to gateway...`);
-        const camelResponse = await camelService.sendClaimWithRetry(savedClaim);
+        console.log(`🔄 Notifying gateway of new claim ${claimId}...`);
+        const gatewayResponse = await camelService.sendClaimToGateway(savedClaim);
         
-        if (camelResponse.success) {
-          console.log(`✅ Successfully forwarded claim ${claimId} to Claims Processing via gateway`);
+        if (gatewayResponse.success) {
+          console.log(`✅ Successfully notified gateway of claim ${claimId}`);
           
-          // Update the claim with forwarding status
+          // Update the claim with gateway notification status
           savedClaim.statusHistory.push({
             status: savedClaim.status,
             timestamp: new Date(),
-            notes: 'Claim successfully forwarded to Claims Processing via gateway'
+            notes: 'Claim successfully sent to gateway for processing'
           });
           await savedClaim.save();
         } else {
-          console.error(`❌ Failed to forward claim ${claimId} to gateway: ${camelResponse.error}`);
+          console.error(`❌ Failed to notify gateway of claim ${claimId}: ${gatewayResponse.error}`);
           
           // Record the failure in the claim history but don't fail the overall operation
           savedClaim.statusHistory.push({
             status: savedClaim.status,
             timestamp: new Date(),
-            notes: `Gateway forwarding failed: ${camelResponse.error}`
+            notes: `Gateway notification failed: ${gatewayResponse.error}`
           });
           await savedClaim.save();
         }
