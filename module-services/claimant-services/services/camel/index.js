@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class CamelService {
     constructor() {
-        this.gatewayUrl = process.env.CAMEL_GRAPHQL_URL || 'http://camel-gateway:8080';
+        this.gatewayUrl = process.env.CAMEL_GATEWAY_URL || 'http://camel-gateway:8080';
         this.timeout = parseInt(process.env.CAMEL_TIMEOUT) || 5000;
         this.retryCount = parseInt(process.env.CAMEL_RETRY_COUNT) || 3;
         this.serviceName = process.env.SERVICE_NAME || 'claimant-services';
