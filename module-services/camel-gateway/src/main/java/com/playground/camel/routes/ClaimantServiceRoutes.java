@@ -8,14 +8,8 @@ public class ClaimantServiceRoutes extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        // Intercept logic must be defined BEFORE any routes
-        interceptFrom("direct:claimantServiceGraphQL")
-            .choice()
-                .when(simple("${body} contains 'mutation CreateClaim'"))
-                    .wireTap("direct:processClaim")
-                .end();
-                
-        // Now define the routes
+        
+        // GraphQL forwarding route for direct GraphQL requests to claimant-services
         from("direct:claimantServiceGraphQL")
             .routeId("claimant-service-graphql")
             .log("Routing GraphQL request to claimant-services: ${body}")
@@ -24,20 +18,6 @@ public class ClaimantServiceRoutes extends RouteBuilder {
             .setHeader("Accept", constant("application/json"))
             .to("http://claimant-services:3000/graphql")
             .log("Received response from claimant-services");
-
-        // New route to receive claims from claimant-services and forward to claims-processing
-        from("direct:processClaim")
-            .routeId("process-claim")
-            .log("Received new claim from claimant-services: ${body}")
-            .removeHeaders("CamelHttp*")
-            // Transform data from claimant-services format to claims-processing format
-            .bean("dataTransformer", "extractClaimFromGraphQL")
-            .bean("dataTransformer", "transformClaimToProcessingFormat")
-            .setHeader("Content-Type", constant("application/json"))
-            .setHeader("Accept", constant("application/json"))
-            // Forward to the claims-processing service
-            .to("http://claims-processing:8000/api/claims")
-            .log("Forwarded claim to claims-processing service");
 
         // Create a REST endpoint that will front the GraphQL service
         rest("/claimant")
@@ -49,11 +29,10 @@ public class ClaimantServiceRoutes extends RouteBuilder {
             // Forward all POST requests to the GraphQL endpoint
             .post("/graphql")
                 .description("GraphQL endpoint for Claimant Services")
-                .to("direct:claimantServiceGraphQL")
-                
-            // New endpoint to receive claims
-            .post("/claims")
-                .description("Endpoint for receiving new claims from Claimant Services")
-                .to("direct:processClaim");
+                .to("direct:claimantServiceGraphQL");
+
+        // Note: The old processClaim route has been removed because we now handle
+        // claim processing through the main /api/submit endpoint in IntegrationRoutes
+        // which saves directly to the database instead of forwarding to another service
     }
 }
