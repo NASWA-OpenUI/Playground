@@ -20,6 +20,7 @@ public class ClaimService {
 
     @Autowired
     private ClaimRepository claimRepository;
+    private EventPublisher eventPublisher;
 
     /**
      * Create a new claim in the gateway database
@@ -42,10 +43,11 @@ public class ClaimService {
         
         claim.addProcessingNote("Claim received from " + claim.getSourceSystem());
         
-        Claim savedClaim = claimRepository.save(claim);
-        logger.info("Successfully created claim with ID: {} (Reference: {})", savedClaim.getId(), savedClaim.getClaimReferenceId());
-        
-        return savedClaim;
+	Claim savedClaim = claimRepository.save(claim);
+	logger.info("Successfully created claim with ID: {} (Reference: {})", savedClaim.getId(), savedClaim.getClaimReferenceId());
+	eventPublisher.publishClaimReceived(savedClaim.getClaimReferenceId(), savedClaim.getSourceSystem());
+	
+	return savedClaim;
     }
 
     /**
@@ -292,11 +294,13 @@ public class ClaimService {
                 throw new IllegalStateException("Cannot advance workflow from current status: " + currentStatus);
         }
         
-        Claim updatedClaim = claimRepository.save(claim);
-        logger.info("Successfully advanced workflow for claim {} from {}/{} to {}/{}", 
-            claimReferenceId, currentStatus, currentStage, 
-            updatedClaim.getStatusCode(), updatedClaim.getWorkflowStage());
-        
-        return updatedClaim;
+	Claim updatedClaim = claimRepository.save(claim);
+	logger.info("Successfully advanced workflow for claim {} from {}/{} to {}/{}", 
+	    claimReferenceId, currentStatus, currentStage, 
+	    updatedClaim.getStatusCode(), updatedClaim.getWorkflowStage());
+	eventPublisher.publishWorkflowAdvanced(claimReferenceId, currentStage, 
+	    updatedClaim.getWorkflowStage(), updatedBy, updatedClaim.getSourceSystem());
+
+	return updatedClaim;
     }
 }
