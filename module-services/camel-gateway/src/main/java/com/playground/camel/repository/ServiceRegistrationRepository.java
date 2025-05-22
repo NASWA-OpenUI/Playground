@@ -3,6 +3,7 @@ package com.playground.camel.repository;
 import com.playground.camel.model.ServiceRegistration;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -19,7 +20,7 @@ public interface ServiceRegistrationRepository extends JpaRepository<ServiceRegi
     List<ServiceRegistration> findByProtocol(String protocol);
     
     @Query("SELECT s FROM ServiceRegistration s WHERE s.lastHeartbeat < :cutoffTime")
-    List<ServiceRegistration> findStaleServices(LocalDateTime cutoffTime);
+    List<ServiceRegistration> findStaleServices(@Param("cutoffTime") LocalDateTime cutoffTime);
     
     @Query("SELECT COUNT(s) FROM ServiceRegistration s WHERE s.status = 'UP'")
     long countActiveServices();
