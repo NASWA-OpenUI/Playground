@@ -1,5 +1,5 @@
 using Apache.NMS;
-using Apache.NMS.Artemis;
+using Apache.NMS.ActiveMQ;
 using Newtonsoft.Json;
 
 namespace EmployerServices.Services
@@ -9,7 +9,7 @@ namespace EmployerServices.Services
         private readonly IConfiguration _config;
         private readonly ILogger<ArtemisService> _logger;
         private IConnection? _connection;
-        private ISession? _session;
+        private Apache.NMS.ISession? _session;  // Fully qualified to avoid conflict
         private IMessageConsumer? _consumer;
         
         public event EventHandler<string>? MessageReceived;
