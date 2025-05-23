@@ -17,36 +17,36 @@ namespace EmployerServices.Services
             _logger = logger;
         }
         
-	public async Task<bool> RegisterServiceAsync()
-	{
-	    try
-	    {
-        	var registration = new
-	        {
-        	    serviceId = _config["CamelGateway:ServiceName"],  // ← Fixed: use serviceId
-	            name = _config["CamelGateway:ServiceName"],       // ← Added: name field
-        	    technology = "DOTNET",                            // ← Added: technology
-	            protocol = "HTTP",                                // ← Added: protocol
-        	    endpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}", // ← Fixed: use container name + endpoint
-	            healthEndpoint = "/api/health"                    // ← Kept: healthEndpoint
-	        };
+        public async Task<bool> RegisterServiceAsync()
+        {
+            try
+            {
+                var registration = new
+                {
+                    serviceId = _config["CamelGateway:ServiceName"],
+                    name = _config["CamelGateway:ServiceName"],
+                    technology = "DOTNET",
+                    protocol = "HTTP",
+                    endpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}",
+                    healthEndpoint = "/api/health"
+                };
         
-        	var json = JsonConvert.SerializeObject(registration);
-	        var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var json = JsonConvert.SerializeObject(registration);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
         
-        	var response = await _httpClient.PostAsync(
-	            $"{_config["CamelGateway:BaseUrl"]}/api/services/register", 
-        	    content);
+                var response = await _httpClient.PostAsync(
+                    $"{_config["CamelGateway:BaseUrl"]}/api/services/register", 
+                    content);
         
-	        _logger.LogInformation($"Service registration result: {response.StatusCode}");
-	        return response.IsSuccessStatusCode;
-	    }
-	    catch (Exception ex)
-	    {
-        	_logger.LogError(ex, "Failed to register with Camel Gateway");
-	        return false;
-	    }
-	}
+                _logger.LogInformation($"Service registration result: {response.StatusCode}");
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to register with Camel Gateway");
+                return false;
+            }
+        }
         
         public async Task SendHeartbeatAsync()
         {
@@ -54,9 +54,9 @@ namespace EmployerServices.Services
             {
                 var heartbeat = new
                 {
-                    serviceName = _config["CamelGateway:ServiceName"],
+                    serviceId = _config["CamelGateway:ServiceName"], // 🔥 Fixed: use serviceId instead of serviceName
                     timestamp = DateTime.UtcNow,
-                    status = "HEALTHY"
+                    status = "UP" // 🔥 Fixed: use "UP" instead of "HEALTHY"
                 };
                 
                 var json = JsonConvert.SerializeObject(heartbeat);
@@ -77,12 +77,30 @@ namespace EmployerServices.Services
             try
             {
                 var response = await _httpClient.GetAsync(
-                    $"{_config["CamelGateway:BaseUrl"]}/api/claims?status=AWAITING_EMPLOYER");
+                    $"{_config["CamelGateway:BaseUrl"]}/api/claims/status/AWAITING_EMPLOYER"); // 🔥 Fixed: use correct endpoint format
                 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<List<ClaimDto>>(json) ?? new List<ClaimDto>();
+                    var claims = JsonConvert.DeserializeObject<List<dynamic>>(json) ?? new List<dynamic>();
+                    
+                    // 🔥 Transform Camel Gateway format to our ClaimDto format
+                    return claims.Select(c => new ClaimDto
+                    {
+                        ClaimReferenceId = c.claimReferenceId?.ToString() ?? "",
+                        ClaimantName = $"{c.firstName} {c.lastName}",
+                        ClaimantEmail = c.emailAddress?.ToString() ?? "",
+                        ClaimantPhone = c.phoneNumber?.ToString() ?? "",
+                        EmployerName = c.employerName?.ToString() ?? "",
+                        EmployerEin = c.employerId?.ToString() ?? "",
+                        ClaimedStartDate = DateTime.TryParse(c.employmentStartDate?.ToString(), out var startDate) ? startDate : DateTime.MinValue,
+                        ClaimedEndDate = DateTime.TryParse(c.employmentEndDate?.ToString(), out var endDate) ? endDate : DateTime.MinValue,
+                        ClaimedWages = decimal.TryParse(c.totalAnnualEarnings?.ToString(), out var wages) ? wages : 0,
+                        SeparationReason = c.separationReasonCode?.ToString() ?? "",
+                        SeparationDetails = c.separationExplanation?.ToString(),
+                        Status = c.statusCode?.ToString() ?? "",
+                        CreatedAt = DateTime.TryParse(c.receivedTimestamp?.ToString(), out var created) ? created : DateTime.MinValue
+                    }).ToList();
                 }
             }
             catch (Exception ex)
@@ -103,7 +121,28 @@ namespace EmployerServices.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<ClaimDto>(json);
+                    var c = JsonConvert.DeserializeObject<dynamic>(json);
+                    
+                    if (c != null)
+                    {
+                        // 🔥 Transform Camel Gateway format to our ClaimDto format
+                        return new ClaimDto
+                        {
+                            ClaimReferenceId = c.claimReferenceId?.ToString() ?? "",
+                            ClaimantName = $"{c.firstName} {c.lastName}",
+                            ClaimantEmail = c.emailAddress?.ToString() ?? "",
+                            ClaimantPhone = c.phoneNumber?.ToString() ?? "",
+                            EmployerName = c.employerName?.ToString() ?? "",
+                            EmployerEin = c.employerId?.ToString() ?? "",
+                            ClaimedStartDate = DateTime.TryParse(c.employmentStartDate?.ToString(), out var startDate) ? startDate : DateTime.MinValue,
+                            ClaimedEndDate = DateTime.TryParse(c.employmentEndDate?.ToString(), out var endDate) ? endDate : DateTime.MinValue,
+                            ClaimedWages = decimal.TryParse(c.totalAnnualEarnings?.ToString(), out var wages) ? wages : 0,
+                            SeparationReason = c.separationReasonCode?.ToString() ?? "",
+                            SeparationDetails = c.separationExplanation?.ToString(),
+                            Status = c.statusCode?.ToString() ?? "",
+                            CreatedAt = DateTime.TryParse(c.receivedTimestamp?.ToString(), out var created) ? created : DateTime.MinValue
+                        };
+                    }
                 }
             }
             catch (Exception ex)
@@ -118,11 +157,20 @@ namespace EmployerServices.Services
         {
             try
             {
-                var json = JsonConvert.SerializeObject(verification);
+                // 🔥 Update the claim status in Camel Gateway after verification
+                var updateData = new
+                {
+                    statusCode = "AWAITING_TAX_CALC",
+                    statusDisplayName = "Awaiting Tax Calculation",
+                    updatedBy = verification.VerifiedBy,
+                    notes = $"Employer verification completed. Verified wages: ${verification.VerifiedWages:F2}. {verification.VerificationNotes}"
+                };
+                
+                var json = JsonConvert.SerializeObject(updateData);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                var response = await _httpClient.PostAsync(
-                    $"{_config["CamelGateway:BaseUrl"]}/api/claims/{claimId}/verify", 
+                var response = await _httpClient.PutAsync(
+                    $"{_config["CamelGateway:BaseUrl"]}/api/claims/{claimId}/status", 
                     content);
                 
                 return response.IsSuccessStatusCode;

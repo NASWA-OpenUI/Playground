@@ -8,6 +8,7 @@ namespace EmployerServices.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
         
         public DbSet<EmployerVerification> EmployerVerifications { get; set; }
+        public DbSet<ImportedClaim> ImportedClaims { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -17,6 +18,12 @@ namespace EmployerServices.Data
                 entity.Property(e => e.Status)
                     .HasConversion<string>()
                     .HasMaxLength(20);
+            });
+            
+            modelBuilder.Entity<ImportedClaim>(entity =>
+            {
+                entity.HasIndex(e => e.ClaimReferenceId).IsUnique();
+                entity.HasIndex(e => e.ImportedAt);
             });
         }
     }

@@ -19,6 +19,7 @@ builder.Services.AddHttpClient<ICamelGatewayService, CamelGatewayService>();
 
 // Custom services
 builder.Services.AddSingleton<IArtemisService, ArtemisService>();
+builder.Services.AddScoped<IClaimImportService, ClaimImportService>(); // 🔥 Added this line
 builder.Services.AddHostedService<EmployerServicesBackgroundService>();
 
 // SPA Configuration
