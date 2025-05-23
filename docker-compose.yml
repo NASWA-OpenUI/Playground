@@ -44,7 +44,6 @@ services:
       - Artemis__TopicName=claim.events
     depends_on:
       - mysql
-      - camel-gateway
     networks:
       - ui-modernization
 
