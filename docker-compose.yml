@@ -5,6 +5,7 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
+      - "61616:61616"
     depends_on:
       - claimant-services
     environment:
