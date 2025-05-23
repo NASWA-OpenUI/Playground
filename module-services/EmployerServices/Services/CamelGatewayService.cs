@@ -93,13 +93,13 @@ namespace EmployerServices.Services
                         ClaimantPhone = c.phoneNumber?.ToString() ?? "",
                         EmployerName = c.employerName?.ToString() ?? "",
                         EmployerEin = c.employerId?.ToString() ?? "",
-                        ClaimedStartDate = DateTime.TryParse(c.employmentStartDate?.ToString(), out var startDate) ? startDate : DateTime.MinValue,
-                        ClaimedEndDate = DateTime.TryParse(c.employmentEndDate?.ToString(), out var endDate) ? endDate : DateTime.MinValue,
-                        ClaimedWages = decimal.TryParse(c.totalAnnualEarnings?.ToString(), out var wages) ? wages : 0,
+                        ClaimedStartDate = DateTime.TryParse(c.employmentStartDate?.ToString(), out DateTime startDate) ? startDate : DateTime.MinValue,
+                        ClaimedEndDate = DateTime.TryParse(c.employmentEndDate?.ToString(), out DateTime endDate) ? endDate : DateTime.MinValue,
+                        ClaimedWages = decimal.TryParse(c.totalAnnualEarnings?.ToString(), out decimal wages) ? wages : 0,
                         SeparationReason = c.separationReasonCode?.ToString() ?? "",
                         SeparationDetails = c.separationExplanation?.ToString(),
                         Status = c.statusCode?.ToString() ?? "",
-                        CreatedAt = DateTime.TryParse(c.receivedTimestamp?.ToString(), out var created) ? created : DateTime.MinValue
+                        CreatedAt = DateTime.TryParse(c.receivedTimestamp?.ToString(), out DateTime created) ? created : DateTime.MinValue
                     }).ToList();
                 }
             }
@@ -134,13 +134,13 @@ namespace EmployerServices.Services
                             ClaimantPhone = c.phoneNumber?.ToString() ?? "",
                             EmployerName = c.employerName?.ToString() ?? "",
                             EmployerEin = c.employerId?.ToString() ?? "",
-                            ClaimedStartDate = DateTime.TryParse(c.employmentStartDate?.ToString(), out var startDate) ? startDate : DateTime.MinValue,
-                            ClaimedEndDate = DateTime.TryParse(c.employmentEndDate?.ToString(), out var endDate) ? endDate : DateTime.MinValue,
-                            ClaimedWages = decimal.TryParse(c.totalAnnualEarnings?.ToString(), out var wages) ? wages : 0,
+                            ClaimedStartDate = DateTime.TryParse(c.employmentStartDate?.ToString(), out DateTime startDate) ? startDate : DateTime.MinValue,
+                            ClaimedEndDate = DateTime.TryParse(c.employmentEndDate?.ToString(), out DateTime endDate) ? endDate : DateTime.MinValue,
+                            ClaimedWages = decimal.TryParse(c.totalAnnualEarnings?.ToString(), out decimal wages) ? wages : 0,
                             SeparationReason = c.separationReasonCode?.ToString() ?? "",
                             SeparationDetails = c.separationExplanation?.ToString(),
                             Status = c.statusCode?.ToString() ?? "",
-                            CreatedAt = DateTime.TryParse(c.receivedTimestamp?.ToString(), out var created) ? created : DateTime.MinValue
+                            CreatedAt = DateTime.TryParse(c.receivedTimestamp?.ToString(), out DateTime created) ? created : DateTime.MinValue
                         };
                     }
                 }
