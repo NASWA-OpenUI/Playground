@@ -23,10 +23,12 @@ namespace EmployerServices.Services
 	    {
         	var registration = new
 	        {
-	            serviceName = _config["CamelGateway:ServiceName"],
-        	    serviceUrl = $"http://employer-services:{_config["CamelGateway:ServicePort"]}", // ← Fixed: use container name
-	            healthEndpoint = "/api/health",
-        	    capabilities = new[] { "EMPLOYER_VERIFICATION" }
+        	    serviceId = _config["CamelGateway:ServiceName"],  // ← Fixed: use serviceId
+	            name = _config["CamelGateway:ServiceName"],       // ← Added: name field
+        	    technology = "DOTNET",                            // ← Added: technology
+	            protocol = "HTTP",                                // ← Added: protocol
+        	    endpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}", // ← Fixed: use container name + endpoint
+	            healthEndpoint = "/api/health"                    // ← Kept: healthEndpoint
 	        };
         
         	var json = JsonConvert.SerializeObject(registration);
