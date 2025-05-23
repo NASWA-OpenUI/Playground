@@ -1,6 +1,7 @@
 using Apache.NMS;
-using Apache.NMS.AMQP;
+using Apache.NMS.ActiveMQ;
 using Newtonsoft.Json;
+using EmployerServices.Models;
 
 namespace EmployerServices.Services
 {
@@ -8,25 +9,27 @@ namespace EmployerServices.Services
     {
         private readonly IConfiguration _config;
         private readonly ILogger<ArtemisService> _logger;
+        private readonly IServiceProvider _serviceProvider;
         private IConnection? _connection;
-        private Apache.NMS.ISession? _session;  // Fully qualified to avoid conflict
+        private Apache.NMS.ISession? _session;
         private IMessageConsumer? _consumer;
         
         public event EventHandler<string>? MessageReceived;
         
-        public ArtemisService(IConfiguration config, ILogger<ArtemisService> logger)
+        public ArtemisService(IConfiguration config, ILogger<ArtemisService> logger, IServiceProvider serviceProvider)
         {
             _config = config;
             _logger = logger;
+            _serviceProvider = serviceProvider;
         }
         
         public async Task StartAsync()
         {
             try
             {
-                // Use AMQP protocol for Artemis
-                var brokerUrl = _config["Artemis:BrokerUrl"]?.Replace("tcp://", "amqp://");
-                var factory = new NMSConnectionFactory(brokerUrl);
+                // Use OpenWire protocol (ActiveMQ native) instead of AMQP
+                var brokerUrl = _config["Artemis:BrokerUrl"];
+                var factory = new ConnectionFactory(brokerUrl);
                 
                 _connection = await factory.CreateConnectionAsync(
                     _config["Artemis:Username"], 
@@ -75,13 +78,39 @@ namespace EmployerServices.Services
             }
         }
         
-        private void OnMessage(IMessage message)
+        private async void OnMessage(IMessage message)
         {
             try
             {
                 if (message is ITextMessage textMessage)
                 {
                     _logger.LogInformation($"Received message: {textMessage.Text}");
+                    
+                    // Parse the event
+                    var eventData = JsonConvert.DeserializeObject<ClaimStatusEvent>(textMessage.Text);
+                    
+                    if (eventData != null && eventData.NewStatus == "AWAITING_EMPLOYER")
+                    {
+                        _logger.LogInformation($"Processing AWAITING_EMPLOYER event for claim {eventData.ClaimReferenceId}");
+                        
+                        // Create a scope to get scoped services
+                        using var scope = _serviceProvider.CreateScope();
+                        var claimImportService = scope.ServiceProvider.GetRequiredService<IClaimImportService>();
+                        
+                        // Auto-import the claim to MySQL
+                        var imported = await claimImportService.ImportClaimAsync(eventData.ClaimReferenceId);
+                        
+                        if (imported)
+                        {
+                            _logger.LogInformation($"Successfully auto-imported claim {eventData.ClaimReferenceId}");
+                        }
+                        else
+                        {
+                            _logger.LogError($"Failed to auto-import claim {eventData.ClaimReferenceId}");
+                        }
+                    }
+                    
+                    // Trigger the original event for any other listeners
                     MessageReceived?.Invoke(this, textMessage.Text);
                 }
             }
