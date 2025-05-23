@@ -5,9 +5,9 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
-      - "61616:61616"
     depends_on:
       - claimant-services
+      - artemis
     environment:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
@@ -41,13 +41,25 @@ services:
       - CamelGateway__ServiceName=employer-services
       - CamelGateway__ServicePort=5002
       - CamelGateway__HeartbeatIntervalSeconds=30
-      - Artemis__BrokerUrl=tcp://camel-gateway:61616
+      - Artemis__BrokerUrl=tcp://artemis:61616
       - Artemis__Username=admin
       - Artemis__Password=admin
       - Artemis__TopicName=claim.events
     depends_on:
       mysql:
         condition: service_healthy
+    networks:
+      - ui-modernization
+    restart: unless-stopped
+
+  artemis:
+    image: apache/activemq-artemis:2.31.2
+    ports:
+      - "61616:61616"
+      - "8161:8161"
+    environment:
+      - ARTEMIS_USER=admin
+      - ARTEMIS_PASSWORD=admin
     networks:
       - ui-modernization
     restart: unless-stopped

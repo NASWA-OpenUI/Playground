@@ -13,8 +13,8 @@ public class EventBusConfig {
 
     @Bean
     public ConnectionFactory jmsConnectionFactory() {
-        // Change from vm://0 to tcp://0.0.0.0:61616 for external access
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://0.0.0.0:61616");
+        // Connect to the standalone Artemis container
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://artemis:61616");
         factory.setUser("admin");
         factory.setPassword("admin");
         return new CachingConnectionFactory(factory);
