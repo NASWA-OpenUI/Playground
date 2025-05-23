@@ -1,5 +1,5 @@
 using Apache.NMS;
-using Apache.NMS.ActiveMQ;
+using Apache.NMS.AMQP;
 using Newtonsoft.Json;
 
 namespace EmployerServices.Services
@@ -24,7 +24,10 @@ namespace EmployerServices.Services
         {
             try
             {
-                var factory = new ConnectionFactory(_config["Artemis:BrokerUrl"]);
+                // Use AMQP protocol for Artemis
+                var brokerUrl = _config["Artemis:BrokerUrl"]?.Replace("tcp://", "amqp://");
+                var factory = new NMSConnectionFactory(brokerUrl);
+                
                 _connection = await factory.CreateConnectionAsync(
                     _config["Artemis:Username"], 
                     _config["Artemis:Password"]);

@@ -17,34 +17,34 @@ namespace EmployerServices.Services
             _logger = logger;
         }
         
-        public async Task<bool> RegisterServiceAsync()
-        {
-            try
-            {
-                var registration = new
-                {
-                    serviceName = _config["CamelGateway:ServiceName"],
-                    serviceUrl = $"http://localhost:{_config["CamelGateway:ServicePort"]}",
-                    healthEndpoint = "/api/health",
-                    capabilities = new[] { "EMPLOYER_VERIFICATION" }
-                };
-                
-                var json = JsonConvert.SerializeObject(registration);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                
-                var response = await _httpClient.PostAsync(
-                    $"{_config["CamelGateway:BaseUrl"]}/api/services/register", 
-                    content);
-                
-                _logger.LogInformation($"Service registration result: {response.StatusCode}");
-                return response.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to register with Camel Gateway");
-                return false;
-            }
-        }
+	public async Task<bool> RegisterServiceAsync()
+	{
+	    try
+	    {
+        	var registration = new
+	        {
+	            serviceName = _config["CamelGateway:ServiceName"],
+        	    serviceUrl = $"http://employer-services:{_config["CamelGateway:ServicePort"]}", // ← Fixed: use container name
+	            healthEndpoint = "/api/health",
+        	    capabilities = new[] { "EMPLOYER_VERIFICATION" }
+	        };
+        
+        	var json = JsonConvert.SerializeObject(registration);
+	        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        
+        	var response = await _httpClient.PostAsync(
+	            $"{_config["CamelGateway:BaseUrl"]}/api/services/register", 
+        	    content);
+        
+	        _logger.LogInformation($"Service registration result: {response.StatusCode}");
+	        return response.IsSuccessStatusCode;
+	    }
+	    catch (Exception ex)
+	    {
+        	_logger.LogError(ex, "Failed to register with Camel Gateway");
+	        return false;
+	    }
+	}
         
         public async Task SendHeartbeatAsync()
         {
