@@ -7,6 +7,7 @@ services:
       - "8081:8081"
     depends_on:
       - claimant-services
+      - employer-services
     environment:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
@@ -24,6 +25,29 @@ services:
     networks:
       - ui-modernization
 
+  employer-services:
+    build:
+      context: ./module-services/EmployerServices
+    ports:
+      - "5002:5002"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5002
+      - ConnectionStrings__DefaultConnection=Server=mysql;Database=employer_services;Uid=root;Pwd=employer_password;
+      - CamelGateway__BaseUrl=http://camel-gateway:8080
+      - CamelGateway__ServiceName=employer-services
+      - CamelGateway__ServicePort=5002
+      - CamelGateway__HeartbeatIntervalSeconds=30
+      - Artemis__BrokerUrl=tcp://camel-gateway:61616
+      - Artemis__Username=admin
+      - Artemis__Password=admin
+      - Artemis__TopicName=claim.events
+    depends_on:
+      - mysql
+      - camel-gateway
+    networks:
+      - ui-modernization
+
   mongodb:
     image: mongo:latest
     ports:
@@ -33,8 +57,21 @@ services:
     networks:
       - ui-modernization
 
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=employer_password
+      - MYSQL_DATABASE=employer_services
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ui-modernization
+
 volumes:
   mongodb_data:
+  mysql_data:
 
 networks:
   ui-modernization:
