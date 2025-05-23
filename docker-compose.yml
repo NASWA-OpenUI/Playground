@@ -7,11 +7,11 @@ services:
       - "8081:8081"
     depends_on:
       - claimant-services
-      - employer-services
     environment:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - ui-modernization
+    restart: unless-stopped
 
   claimant-services:
     build:
@@ -21,9 +21,11 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/claimant_services
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - ui-modernization
+    restart: unless-stopped
 
   employer-services:
     build:
@@ -43,10 +45,11 @@ services:
       - Artemis__Password=admin
       - Artemis__TopicName=claim.events
     depends_on:
-      - mysql
-      - camel-gateway
+      mysql:
+        condition: service_healthy
     networks:
       - ui-modernization
+    restart: unless-stopped
 
   mongodb:
     image: mongo:latest
@@ -56,6 +59,13 @@ services:
       - mongodb_data:/data/db
     networks:
       - ui-modernization
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
 
   mysql:
     image: mysql:8.0
@@ -68,6 +78,13 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - ui-modernization
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pemployer_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
 
 volumes:
   mongodb_data:
