@@ -35,7 +35,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5002
-      - ConnectionStrings__DefaultConnection=Server=mysql;Database=employer_services;Uid=root;Pwd=employer_password;
+      - ConnectionStrings__DefaultConnection=Server=mysql;Database=employer_services;Uid=root;Pwd=employer_password;SslMode=none;AllowPublicKeyRetrieval=true;
       - CamelGateway__BaseUrl=http://camel-gateway:8080
       - CamelGateway__ServiceName=employer-services
       - CamelGateway__ServicePort=5002
