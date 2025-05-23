@@ -6,14 +6,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.jms.connection.CachingConnectionFactory;
 
-import jakarta.jms.ConnectionFactory; // Use jakarta, not javax
+import jakarta.jms.ConnectionFactory;
 
 @Configuration
 public class EventBusConfig {
 
     @Bean
     public ConnectionFactory jmsConnectionFactory() {
-        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("vm://0");
+        // Change from vm://0 to tcp://0.0.0.0:61616 for external access
+        ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://0.0.0.0:61616");
+        factory.setUser("admin");
+        factory.setPassword("admin");
         return new CachingConnectionFactory(factory);
     }
 
