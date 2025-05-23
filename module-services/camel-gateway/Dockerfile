@@ -13,8 +13,8 @@ COPY src ./src
 # Build the application
 RUN mvn clean compile
 
-# Expose ports
-EXPOSE 8080 8081
+# Expose ports - add Artemis port
+EXPOSE 8080 8081 61616
 
 # Run the application
 CMD ["mvn", "exec:java", "-Dexec.mainClass=com.playground.camel.CamelGatewayApp"]
