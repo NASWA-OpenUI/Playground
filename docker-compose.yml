@@ -7,7 +7,7 @@ services:
       - "8081:8081"
     depends_on:
       - claimant-services
-      environment:
+    environment:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - ui-modernization
