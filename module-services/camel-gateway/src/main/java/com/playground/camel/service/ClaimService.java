@@ -47,7 +47,6 @@ public class ClaimService {
         
 	Claim savedClaim = claimRepository.save(claim);
 	logger.info("Successfully created claim with ID: {} (Reference: {})", savedClaim.getId(), savedClaim.getClaimReferenceId());
-	eventPublisher.publishClaimReceived(savedClaim.getClaimReferenceId(), savedClaim.getSourceSystem());
 	savedClaim = advanceClaimWorkflow(savedClaim.getClaimReferenceId(), "system");
 
 	return savedClaim;
@@ -71,11 +70,8 @@ public class ClaimService {
             claim.addProcessingNote("Status changed from " + previousStatus + " to " + statusCode);
         }
         
-        Claim updatedClaim = claimRepository.save(claim);
-        
-        // 🔥 FIXED: Publish status change event to Artemis
-        eventPublisher.publishStatusChanged(claimReferenceId, previousStatus, statusCode, updatedBy, updatedClaim.getSourceSystem());
-        
+        Claim updatedClaim = claimRepository.save(claim);     
+   
         logger.info("Successfully updated claim {} status to: {}", claimReferenceId, statusCode);
         return updatedClaim;
     }
@@ -305,11 +301,6 @@ public class ClaimService {
 	    claimReferenceId, currentStatus, currentStage, 
 	    updatedClaim.getStatusCode(), updatedClaim.getWorkflowStage());
 	    
-	// 🔥 ALSO FIXED: Publish status change event when workflow advances
-	eventPublisher.publishStatusChanged(claimReferenceId, currentStatus, updatedClaim.getStatusCode(), updatedBy, updatedClaim.getSourceSystem());
-	eventPublisher.publishWorkflowAdvanced(claimReferenceId, currentStage, 
-	    updatedClaim.getWorkflowStage(), updatedBy, updatedClaim.getSourceSystem());
-
 	return updatedClaim;
     }
 }
