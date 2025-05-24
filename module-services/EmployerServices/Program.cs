@@ -36,6 +36,9 @@ app.UseRouting();
 
 app.MapRazorPages();
 
+// Set default route to Dashboard
+app.MapGet("/", () => Results.Redirect("/Dashboard"));
+
 // Health check endpoint (keep this simple one for camel-gateway)
 app.MapGet("/api/health", () => new
 {
