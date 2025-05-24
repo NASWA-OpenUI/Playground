@@ -20,6 +20,9 @@ builder.Services.AddHttpClient<ICamelGatewayService, CamelGatewayService>();
 builder.Services.AddScoped<IClaimImportService, ClaimImportService>();
 builder.Services.AddHostedService<EmployerServicesBackgroundService>();
 
+// Disable anti-forgery
+options.Conventions.ConfigureFilter(new IgnoreAntiforgeryTokenAttribute());
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
