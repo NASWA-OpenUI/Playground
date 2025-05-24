@@ -24,11 +24,11 @@ namespace EmployerServices.Services
                 var registration = new
                 {
                     serviceId = _config["CamelGateway:ServiceName"],
-                    name = _config["CamelGateway:ServiceName"],
+                    name = "Employer Services",  // 🔥 FIXED: Use proper display name
                     technology = "DOTNET",
                     protocol = "HTTP",
                     endpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}",
-                    healthEndpoint = "/api/health"
+                    healthEndpoint = "/api/health"  // 🔥 FIXED: This was the missing required field!
                 };
         
                 var json = JsonConvert.SerializeObject(registration);
@@ -55,16 +55,25 @@ namespace EmployerServices.Services
                 var heartbeat = new
                 {
                     serviceId = _config["CamelGateway:ServiceName"],
-                    timestamp = DateTime.UtcNow,
+                    timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),  // 🔥 FIXED: Proper ISO format
                     status = "UP"
                 };
                 
                 var json = JsonConvert.SerializeObject(heartbeat);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                await _httpClient.PostAsync(
+                var response = await _httpClient.PostAsync(
                     $"{_config["CamelGateway:BaseUrl"]}/api/services/heartbeat", 
                     content);
+                    
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogDebug("Heartbeat sent successfully");
+                }
+                else
+                {
+                    _logger.LogWarning($"Heartbeat failed with status: {response.StatusCode}");
+                }
             }
             catch (Exception ex)
             {
@@ -180,6 +189,15 @@ namespace EmployerServices.Services
                 var response = await _httpClient.PutAsync(
                     $"{_config["CamelGateway:BaseUrl"]}/api/claims/{claimId}/status", 
                     content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation($"Successfully updated claim {claimId} status in Camel Gateway");
+                }
+                else
+                {
+                    _logger.LogError($"Failed to update claim {claimId} status in Camel Gateway: {response.StatusCode}");
+                }
                 
                 return response.IsSuccessStatusCode;
             }
