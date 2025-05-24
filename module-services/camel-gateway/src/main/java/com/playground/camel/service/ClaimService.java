@@ -48,7 +48,8 @@ public class ClaimService {
 	Claim savedClaim = claimRepository.save(claim);
 	logger.info("Successfully created claim with ID: {} (Reference: {})", savedClaim.getId(), savedClaim.getClaimReferenceId());
 	eventPublisher.publishClaimReceived(savedClaim.getClaimReferenceId(), savedClaim.getSourceSystem());
-	
+	savedClaim = advanceClaimWorkflow(savedClaim.getClaimReferenceId(), "system");
+
 	return savedClaim;
     }
 
