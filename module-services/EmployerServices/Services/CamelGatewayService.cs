@@ -54,9 +54,9 @@ namespace EmployerServices.Services
             {
                 var heartbeat = new
                 {
-                    serviceId = _config["CamelGateway:ServiceName"], // 🔥 Fixed: use serviceId instead of serviceName
+                    serviceId = _config["CamelGateway:ServiceName"],
                     timestamp = DateTime.UtcNow,
-                    status = "UP" // 🔥 Fixed: use "UP" instead of "HEALTHY"
+                    status = "UP"
                 };
                 
                 var json = JsonConvert.SerializeObject(heartbeat);
@@ -76,16 +76,20 @@ namespace EmployerServices.Services
         {
             try
             {
+                // 🔥 FIXED: Use the working /api/claims endpoint and filter client-side
                 var response = await _httpClient.GetAsync(
-                    $"{_config["CamelGateway:BaseUrl"]}/api/claims/status/AWAITING_EMPLOYER"); // 🔥 Fixed: use correct endpoint format
+                    $"{_config["CamelGateway:BaseUrl"]}/api/claims");
                 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var claims = JsonConvert.DeserializeObject<List<dynamic>>(json) ?? new List<dynamic>();
+                    var allClaims = JsonConvert.DeserializeObject<List<dynamic>>(json) ?? new List<dynamic>();
+                    
+                    // Filter for claims with status "AWAITING_EMPLOYER"
+                    var pendingClaims = allClaims.Where(c => c.statusCode?.ToString() == "AWAITING_EMPLOYER").ToList();
                     
                     // 🔥 Transform Camel Gateway format to our ClaimDto format
-                    return claims.Select(c => new ClaimDto
+                    return pendingClaims.Select(c => new ClaimDto
                     {
                         ClaimReferenceId = c.claimReferenceId?.ToString() ?? "",
                         ClaimantName = $"{c.firstName} {c.lastName}",
@@ -115,13 +119,17 @@ namespace EmployerServices.Services
         {
             try
             {
+                // 🔥 ALSO FIXED: Use the working /api/claims endpoint and find by ID
                 var response = await _httpClient.GetAsync(
-                    $"{_config["CamelGateway:BaseUrl"]}/api/claims/{claimId}");
+                    $"{_config["CamelGateway:BaseUrl"]}/api/claims");
                 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var c = JsonConvert.DeserializeObject<dynamic>(json);
+                    var allClaims = JsonConvert.DeserializeObject<List<dynamic>>(json) ?? new List<dynamic>();
+                    
+                    // Find the specific claim by ID
+                    var c = allClaims.FirstOrDefault(claim => claim.claimReferenceId?.ToString() == claimId);
                     
                     if (c != null)
                     {
