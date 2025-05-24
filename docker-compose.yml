@@ -40,7 +40,6 @@ services:
       - CamelGateway__ServiceName=employer-services
       - CamelGateway__ServicePort=5002
       - CamelGateway__HeartbeatIntervalSeconds=30
-      - ClaimPolling__IntervalSeconds=30
     depends_on:
       mysql:
         condition: service_healthy
