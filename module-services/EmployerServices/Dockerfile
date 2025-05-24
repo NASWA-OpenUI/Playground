@@ -4,9 +4,8 @@ EXPOSE 5002
 
 # Build React app first
 FROM node:18 AS react-build
-WORKDIR /src
+WORKDIR /src/ClientApp
 COPY ClientApp/package.json ./
-WORKDIR /src
 RUN npm install
 COPY ClientApp/ .
 RUN npm run build
