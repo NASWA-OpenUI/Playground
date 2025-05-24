@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        ServerVersion.Create(8, 0, 33))); // Use fixed version instead of AutoDetect
+        MySqlServerVersion.LatestSupportedServerVersion));
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
