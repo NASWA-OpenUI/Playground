@@ -41,10 +41,7 @@ services:
       - CamelGateway__ServiceName=employer-services
       - CamelGateway__ServicePort=5002
       - CamelGateway__HeartbeatIntervalSeconds=30
-      - Artemis__BrokerUrl=tcp://artemis:61616
-      - Artemis__Username=admin
-      - Artemis__Password=admin
-      - Artemis__TopicName=claim.events
+      - ClaimPolling__IntervalSeconds=30
     depends_on:
       mysql:
         condition: service_healthy
