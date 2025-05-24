@@ -21,9 +21,6 @@ public class ClaimService {
     @Autowired
     private ClaimRepository claimRepository;
     
-    @Autowired
-    private EventPublisher eventPublisher;
-
     /**
      * Create a new claim in the gateway database
      */
