@@ -5,9 +5,9 @@ EXPOSE 5002
 # Build React app first
 FROM node:18 AS react-build
 WORKDIR /src
-COPY ["ClientApp/package.json", "ClientApp/package-lock.json*", "ClientApp/"]
-WORKDIR /src/ClientApp
-RUN npm ci --only=production
+COPY ClientApp/package.json ./
+WORKDIR /src
+RUN npm install
 COPY ClientApp/ .
 RUN npm run build
 
