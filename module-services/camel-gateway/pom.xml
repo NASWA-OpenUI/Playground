@@ -106,7 +106,7 @@
             <version>${spring.boot.version}</version>
         </dependency>
 
-        <!-- Add dependencies for protocols we'll support -->
+        <!-- Protocol Support -->
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-rest-starter</artifactId>
@@ -115,18 +115,6 @@
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-spring-ws-starter</artifactId>
-        </dependency>
-
-	    <!-- ActiveMQ Artemis for event bus -->
-        <dependency>
-            <groupId>org.apache.camel.springboot</groupId>
-            <artifactId>camel-jms-starter</artifactId>
-        </dependency>
-    
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-artemis</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
 
         <!-- Add servlet component for REST implementation -->
@@ -139,6 +127,16 @@
 
     <build>
         <plugins>
+            <!-- 🔥 MAIN FIX: Maven Compiler Plugin with parameter preservation -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+            
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -151,6 +149,7 @@
                     </execution>
                 </executions>
             </plugin>
+            
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
