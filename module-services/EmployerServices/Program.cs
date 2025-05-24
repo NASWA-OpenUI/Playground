@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using EmployerServices.Data;
 using EmployerServices.Services;
 
@@ -10,8 +11,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         MySqlServerVersion.LatestSupportedServerVersion));
 
-// Add Razor Pages
-builder.Services.AddRazorPages();
+// Add Razor Pages with anti-forgery disabled
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.ConfigureFilter(new IgnoreAntiforgeryTokenAttribute());
+});
 
 // HTTP Client for Camel Gateway
 builder.Services.AddHttpClient<ICamelGatewayService, CamelGatewayService>();
@@ -19,9 +23,6 @@ builder.Services.AddHttpClient<ICamelGatewayService, CamelGatewayService>();
 // Custom services
 builder.Services.AddScoped<IClaimImportService, ClaimImportService>();
 builder.Services.AddHostedService<EmployerServicesBackgroundService>();
-
-// Disable anti-forgery
-options.Conventions.ConfigureFilter(new IgnoreAntiforgeryTokenAttribute());
 
 var app = builder.Build();
 
