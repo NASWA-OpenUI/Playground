@@ -7,8 +7,7 @@ services:
       - "8081:8081"
     depends_on:
       - claimant-services
-      - artemis
-    environment:
+      environment:
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - ui-modernization
@@ -45,18 +44,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-    networks:
-      - ui-modernization
-    restart: unless-stopped
-
-  artemis:
-    image: apache/activemq-artemis:2.31.2
-    ports:
-      - "61616:61616"
-      - "8161:8161"
-    environment:
-      - ARTEMIS_USER=admin
-      - ARTEMIS_PASSWORD=admin
     networks:
       - ui-modernization
     restart: unless-stopped
