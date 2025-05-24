@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using EmployerServices.Data;
 using EmployerServices.Services;
-using EmployerServices.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,30 +10,20 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         MySqlServerVersion.LatestSupportedServerVersion));
 
-builder.Services.AddControllers();
-builder.Services.AddSignalR();
+// Add Razor Pages
+builder.Services.AddRazorPages();
 
 // HTTP Client for Camel Gateway
 builder.Services.AddHttpClient<ICamelGatewayService, CamelGatewayService>();
 
 // Custom services
-builder.Services.AddScoped<IClaimImportService, ClaimImportService>(); // 🔥 Added this line
+builder.Services.AddScoped<IClaimImportService, ClaimImportService>();
 builder.Services.AddHostedService<EmployerServicesBackgroundService>();
-
-// SPA Configuration
-builder.Services.AddSpaStaticFiles(configuration =>
-{
-    configuration.RootPath = "ClientApp/build";
-});
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
@@ -42,21 +31,17 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseSpaStaticFiles();
 
 app.UseRouting();
 
-app.MapControllers();
-app.MapHub<ClaimHub>("/claimhub");
+app.MapRazorPages();
 
-app.UseSpa(spa =>
+// Health check endpoint (keep this simple one for camel-gateway)
+app.MapGet("/api/health", () => new
 {
-    spa.Options.SourcePath = "ClientApp";
-    
-    if (app.Environment.IsDevelopment())
-    {
-        spa.UseProxyToSpaDevelopmentServer("http://localhost:3000");
-    }
+    status = "HEALTHY",
+    timestamp = DateTime.UtcNow,
+    service = "employer-services"
 });
 
 // Ensure database is created
