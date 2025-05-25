@@ -28,7 +28,7 @@ namespace EmployerServices.Services
                     technology = "DOTNET",
                     protocol = "HTTP",
                     endpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}",
-                    healthEndpoint = "/api/health"  // 🔥 FIXED: This was the missing required field!
+		    healthEndpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}/api/health"
                 };
         
                 var json = JsonConvert.SerializeObject(registration);
