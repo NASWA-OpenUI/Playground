@@ -2,7 +2,9 @@ package com.playground.camel.controller;
 
 import com.playground.camel.monitoring.HealthMonitor;
 import com.playground.camel.model.ServiceRegistration;
+import com.playground.camel.model.Claim;
 import com.playground.camel.service.ServiceRegistrationService;
+import com.playground.camel.service.ClaimService;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,9 @@ public class IntegrationController {
 
     @Autowired
     private ServiceRegistrationService serviceRegistrationService;
+
+    @Autowired
+    private ClaimService claimService;
 
     @PostMapping(value = "/submit", 
                 consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -221,6 +226,54 @@ public class IntegrationController {
         } catch (Exception e) {
             logger.error("❌ Failed to get services list", e);
             return ResponseEntity.status(500).build();
+        }
+    }
+
+    // NEW CLAIMS ENDPOINTS FOR TAX-SERVICE INTEGRATION
+    @GetMapping(value = "/claims/status/{status}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Claim>> getClaimsByStatus(@PathVariable String status) {
+        logger.info("🔍 Claims requested for status: {}", status);
+        
+        try {
+            // Use the existing Camel route that's already defined in IntegrationRoutes.java
+            // Set the status as a header and call the direct route
+            Map<String, Object> headers = new HashMap<>();
+            headers.put("statusCode", status);
+            
+            // Call the Camel route to get claims by status
+            @SuppressWarnings("unchecked")
+            List<Claim> claims = (List<Claim>) producerTemplate.requestBodyAndHeaders(
+                "direct:getClaimsByStatus", 
+                null, 
+                headers, 
+                List.class
+            );
+            
+            logger.info("📋 Found {} claims with status: {}", claims.size(), status);
+            return ResponseEntity.ok(claims);
+            
+        } catch (Exception e) {
+            logger.error("❌ Failed to get claims for status {}: {}", status, e.getMessage(), e);
+            
+            // Return empty list instead of error to avoid breaking polling services
+            logger.info("📋 Returning empty list due to error");
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+    }
+
+    @GetMapping(value = "/claims", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Claim>> getAllClaims() {
+        logger.info("🔍 All claims requested");
+        
+        try {
+            List<Claim> claims = claimService.getAllClaims();
+            
+            logger.info("📋 Found {} total claims", claims.size());
+            return ResponseEntity.ok(claims);
+            
+        } catch (Exception e) {
+            logger.error("❌ Failed to get all claims: {}", e.getMessage(), e);
+            return ResponseEntity.ok(java.util.Collections.emptyList());
         }
     }
 

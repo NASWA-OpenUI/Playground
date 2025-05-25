@@ -167,56 +167,79 @@ class TaxService:
             logger.error(f"❌ Heartbeat failed: {e}")
             return False
     
-    def poll_for_claims(self):
-        """Poll camel gateway for claims awaiting tax calculation"""
-        try:
-            response = requests.get(
-                f"{self.gateway_url}/api/claims/status/AWAITING_TAX_CALCULATION",
-                timeout=5
-            )
+def poll_for_claims(self):
+    """Poll camel gateway for claims awaiting tax calculation"""
+    try:
+        # Use the correct status value from Camel's Claim.java
+        status = 'AWAITING_TAX_CALC'
+        logger.info(f"Polling for claims with status: {status}")
+        
+        response = requests.get(
+            f"{self.gateway_url}/api/claims/status/{status}",
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            claims = response.json()
+            logger.info(f"Found {len(claims)} claims with status {status}")
             
-            if response.status_code == 200:
-                claims = response.json()
-                logger.info(f"Found {len(claims)} claims awaiting tax calculation")
+            for claim in claims:
+                self.process_claim(claim)
+        elif response.status_code == 404:
+            logger.warning(f"Claims endpoint not found - may need to add endpoint to Camel gateway")
+        else:
+            logger.warning(f"Failed to get claims for status {status}: {response.status_code}")
+            logger.warning(f"Response body: {response.text}")
                 
-                for claim in claims:
-                    self.process_claim(claim)
-                    
-        except Exception as e:
-            logger.error(f"Failed to poll for claims: {e}")
-    
+    except Exception as e:
+        logger.error(f"Failed to poll for claims: {e}")
+        # Add more detailed error logging
+        import traceback
+        logger.error(f"Full error trace: {traceback.format_exc()}")
+
     def process_claim(self, claim_data):
-        """Process a single claim for tax calculation"""
+    """Process a single claim for tax calculation"""
         try:
-            claim_id = claim_data.get('claimId')
-            wages = float(claim_data.get('wages', 0))
-            
+            # The claim object from Camel will have different field names than what we expected
+            # Based on Claim.java, the fields will be camelCase
+            claim_id = claim_data.get('claimReferenceId')  # Changed from 'claimId'
+        
+            # The wage data might be in totalAnnualEarnings or basePeriodQ4
+            wages = 0
+            if claim_data.get('totalAnnualEarnings'):
+                wages = float(claim_data.get('totalAnnualEarnings', 0))
+            elif claim_data.get('basePeriodQ4'):
+                wages = float(claim_data.get('basePeriodQ4', 0))
+            else:
+                logger.warning(f"No wage data found for claim {claim_id}")
+                return False
+        
             logger.info(f"Processing claim {claim_id} with wages ${wages}")
-            
+        
             # Get current tax rates
             conn = self.get_db_connection()
             cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
+        
             cursor.execute("SELECT * FROM tax_rates ORDER BY updated_at DESC LIMIT 1")
             tax_rates = cursor.fetchone()
-            
+        
             if not tax_rates:
                 logger.error("No tax rates found")
                 return False
-            
+        
             # Calculate taxes
             state_rate = float(tax_rates['state_tax_rate'])
             federal_rate = float(tax_rates['federal_tax_rate'])
-            
+        
             state_tax = wages * state_rate
             federal_tax = wages * federal_rate
             total_tax = state_tax + federal_tax
-            
+        
             # Store calculation
             cursor.execute("""
                 INSERT INTO tax_calculations 
                 (claim_id, wages, state_tax_rate, federal_tax_rate, 
-                 state_tax_amount, federal_tax_amount, total_tax_amount)
+                state_tax_amount, federal_tax_amount, total_tax_amount)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (claim_id) DO UPDATE SET
                 wages = EXCLUDED.wages,
@@ -227,10 +250,10 @@ class TaxService:
                 total_tax_amount = EXCLUDED.total_tax_amount,
                 calculated_at = CURRENT_TIMESTAMP
             """, (claim_id, wages, state_rate, federal_rate, state_tax, federal_tax, total_tax))
-            
+        
             conn.commit()
             conn.close()
-            
+        
             # Send results back to camel via SOAP
             self.send_tax_results_via_soap(claim_id, {
                 'stateTaxAmount': round(state_tax, 2),
@@ -239,42 +262,44 @@ class TaxService:
                 'stateTaxRate': state_rate,
                 'federalTaxRate': federal_rate
             })
-            
+        
             logger.info(f"Tax calculation completed for {claim_id}: State=${state_tax:.2f}, Federal=${federal_tax:.2f}, Total=${total_tax:.2f}")
-            
+        
         except Exception as e:
-            logger.error(f"Failed to process claim {claim_data.get('claimId', 'unknown')}: {e}")
+            logger.error(f"Failed to process claim {claim_data.get('claimReferenceId', 'unknown')}: {e}")
+            import traceback
+            logger.error(f"Full error trace: {traceback.format_exc()}")
     
-    def send_tax_results_via_soap(self, claim_id, tax_data):
-        """Send tax calculation results back to camel gateway via SOAP"""
-        try:
-            # Create SOAP envelope manually for demo purposes
-            soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-    <soap:Body>
-        <UpdateTaxCalculation xmlns="http://camel-gateway/tax">
-            <claimId>{claim_id}</claimId>
-            <stateTaxAmount>{tax_data['stateTaxAmount']}</stateTaxAmount>
-            <federalTaxAmount>{tax_data['federalTaxAmount']}</federalTaxAmount>
-            <totalTaxAmount>{tax_data['totalTaxAmount']}</totalTaxAmount>
-            <stateTaxRate>{tax_data['stateTaxRate']}</stateTaxRate>
-            <federalTaxRate>{tax_data['federalTaxRate']}</federalTaxRate>
-            <calculatedBy>tax-services</calculatedBy>
-            <calculatedAt>{datetime.now().isoformat()}</calculatedAt>
-        </UpdateTaxCalculation>
-    </soap:Body>
-</soap:Envelope>"""
+        def send_tax_results_via_soap(self, claim_id, tax_data):
+            """Send tax calculation results back to camel gateway via SOAP"""
+            try:
+                # Create SOAP envelope manually for demo purposes
+                soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
+    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Body>
+            <UpdateTaxCalculation xmlns="http://camel-gateway/tax">
+                <claimId>{claim_id}</claimId>
+                <stateTaxAmount>{tax_data['stateTaxAmount']}</stateTaxAmount>
+                <federalTaxAmount>{tax_data['federalTaxAmount']}</federalTaxAmount>
+                <totalTaxAmount>{tax_data['totalTaxAmount']}</totalTaxAmount>
+                <stateTaxRate>{tax_data['stateTaxRate']}</stateTaxRate>
+                <federalTaxRate>{tax_data['federalTaxRate']}</federalTaxRate>
+                <calculatedBy>tax-services</calculatedBy>
+                <calculatedAt>{datetime.now().isoformat()}</calculatedAt>
+            </UpdateTaxCalculation>
+        </soap:Body>
+    </soap:Envelope>"""
             
-            headers = {
-                'Content-Type': 'text/xml; charset=utf-8',
-                'SOAPAction': 'http://camel-gateway/tax/UpdateTaxCalculation'
-            }
+                headers = {
+                    'Content-Type': 'text/xml; charset=utf-8',
+                    'SOAPAction': 'http://camel-gateway/tax/UpdateTaxCalculation'
+                }
             
-            response = requests.post(
-                f"{self.gateway_url}/soap/tax",
-                data=soap_body,
-                headers=headers,
-                timeout=10
+                response = requests.post(
+                    f"{self.gateway_url}/soap/tax",
+                    data=soap_body,
+                    headers=headers,
+                    timeout=10
             )
             
             if response.status_code == 200:
