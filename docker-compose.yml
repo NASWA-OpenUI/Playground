@@ -66,7 +66,7 @@ services:
       tax-postgres:
         condition: service_healthy
       camel-gateway:
-        condition: service_started
+        condition: service_healthy
     networks:
       - ui-modernization
     restart: unless-stopped
