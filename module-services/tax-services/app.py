@@ -104,7 +104,7 @@ class TaxService:
         finally:
             conn.close()
     
-    async def register_with_gateway(self):
+    def register_with_gateway(self):
         """Register this service with the camel gateway"""
         registration_data = {
             'serviceId': self.service_name,
