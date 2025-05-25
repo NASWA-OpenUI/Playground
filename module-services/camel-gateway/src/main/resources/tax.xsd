@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+           targetNamespace="http://camel-gateway/tax"
+           xmlns:tns="http://camel-gateway/tax" 
+           elementFormDefault="qualified">
+
+    <!-- Tax Calculation Update Request -->
+    <xs:element name="UpdateTaxCalculation">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="claimId" type="xs:string"/>
+                <xs:element name="stateTaxAmount" type="xs:decimal"/>
+                <xs:element name="federalTaxAmount" type="xs:decimal"/>
+                <xs:element name="totalTaxAmount" type="xs:decimal"/>
+                <xs:element name="stateTaxRate" type="xs:decimal" minOccurs="0"/>
+                <xs:element name="federalTaxRate" type="xs:decimal" minOccurs="0"/>
+                <xs:element name="calculatedBy" type="xs:string" minOccurs="0"/>
+                <xs:element name="calculatedAt" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Tax Calculation Update Response -->
+    <xs:element name="UpdateTaxCalculationResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="status" type="xs:string"/>
+                <xs:element name="message" type="xs:string"/>
+                <xs:element name="claimId" type="xs:string" minOccurs="0"/>
+                <xs:element name="newStatus" type="xs:string" minOccurs="0"/>
+                <xs:element name="newWorkflowStage" type="xs:string" minOccurs="0"/>
+                <xs:element name="errorCode" type="xs:string" minOccurs="0"/>
+                <xs:element name="processedAt" type="xs:string" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>
