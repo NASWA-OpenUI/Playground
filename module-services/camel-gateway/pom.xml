@@ -143,6 +143,12 @@
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
         </dependency>
+        
+        <!-- WSDL4J for WSDL generation -->
+        <dependency>
+            <groupId>wsdl4j</groupId>
+            <artifactId>wsdl4j</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
