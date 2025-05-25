@@ -273,20 +273,20 @@ class TaxService:
     def send_tax_results_via_soap(self, claim_id, tax_data):
         """Send tax calculation results back to camel gateway via SOAP"""
         try:
-            # Create SOAP envelope manually for demo purposes
+            # Create SOAP envelope with proper namespace and structure
             soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tax="http://camel-gateway/tax">
     <soap:Body>
-        <UpdateTaxCalculation xmlns="http://camel-gateway/tax">
-            <claimId>{claim_id}</claimId>
-            <stateTaxAmount>{tax_data['stateTaxAmount']}</stateTaxAmount>
-            <federalTaxAmount>{tax_data['federalTaxAmount']}</federalTaxAmount>
-            <totalTaxAmount>{tax_data['totalTaxAmount']}</totalTaxAmount>
-            <stateTaxRate>{tax_data['stateTaxRate']}</stateTaxRate>
-            <federalTaxRate>{tax_data['federalTaxRate']}</federalTaxRate>
-            <calculatedBy>tax-services</calculatedBy>
-            <calculatedAt>{datetime.now().isoformat()}</calculatedAt>
-        </UpdateTaxCalculation>
+        <tax:UpdateTaxCalculation>
+            <tax:claimId>{claim_id}</tax:claimId>
+            <tax:stateTaxAmount>{tax_data['stateTaxAmount']}</tax:stateTaxAmount>
+            <tax:federalTaxAmount>{tax_data['federalTaxAmount']}</tax:federalTaxAmount>
+            <tax:totalTaxAmount>{tax_data['totalTaxAmount']}</tax:totalTaxAmount>
+            <tax:stateTaxRate>{tax_data['stateTaxRate']}</tax:stateTaxRate>
+            <tax:federalTaxRate>{tax_data['federalTaxRate']}</tax:federalTaxRate>
+            <tax:calculatedBy>tax-services</tax:calculatedBy>
+            <tax:calculatedAt>{datetime.now().isoformat()}</tax:calculatedAt>
+        </tax:UpdateTaxCalculation>
     </soap:Body>
 </soap:Envelope>"""
             
@@ -295,6 +295,9 @@ class TaxService:
                 'SOAPAction': 'http://camel-gateway/tax/UpdateTaxCalculation'
             }
             
+            logger.info(f"Sending SOAP request for claim {claim_id}")
+            logger.debug(f"SOAP Body: {soap_body}")  # Add debug logging
+            
             response = requests.post(
                 f"{self.gateway_url}/soap/tax",
                 data=soap_body,
@@ -302,15 +305,21 @@ class TaxService:
                 timeout=10
             )
             
+            logger.info(f"SOAP Response Status: {response.status_code}")
+            logger.debug(f"SOAP Response Body: {response.text}")
+            
             if response.status_code == 200:
                 logger.info(f"✅ Tax results sent via SOAP for claim {claim_id}")
                 return True
             else:
                 logger.error(f"❌ SOAP request failed with status {response.status_code}")
+                logger.error(f"Response: {response.text}")
                 return False
                 
         except Exception as e:
             logger.error(f"Failed to send SOAP request: {e}")
+            import traceback
+            logger.error(f"Full error trace: {traceback.format_exc()}")
             return False
 
 # Initialize service
