@@ -47,6 +47,30 @@ services:
       - ui-modernization
     restart: unless-stopped
 
+  tax-services:
+    build:
+      context: ./module-services/tax-services
+    ports:
+      - "5003:5003"
+    environment:
+      - DB_HOST=tax-postgres
+      - DB_NAME=taxservices
+      - DB_USER=postgres
+      - DB_PASSWORD=tax_password
+      - DB_PORT=5432
+      - CAMEL_GATEWAY_URL=http://camel-gateway:8080
+      - SERVICE_NAME=tax-services
+      - PORT=5003
+      - POLL_INTERVAL=10
+    depends_on:
+      tax-postgres:
+        condition: service_healthy
+      camel-gateway:
+        condition: service_started
+    networks:
+      - ui-modernization
+    restart: unless-stopped
+
   mongodb:
     image: mongo:latest
     ports:
@@ -82,9 +106,30 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  tax-postgres:
+    image: postgres:15
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_DB=taxservices
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=tax_password
+    volumes:
+      - tax_postgres_data:/var/lib/postgresql/data
+    networks:
+      - ui-modernization
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d taxservices"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
 volumes:
   mongodb_data:
   mysql_data:
+  tax_postgres_data:
 
 networks:
   ui-modernization:
