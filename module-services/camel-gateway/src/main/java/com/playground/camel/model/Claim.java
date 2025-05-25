@@ -88,6 +88,19 @@ public class Claim {
     @Column(name = "maximum_benefit_amount", precision = 10, scale = 2)
     private BigDecimal maximumBenefitAmount;
 
+    // Tax Information (added for SOAP tax service integration)
+    @Column(name = "state_tax_amount", precision = 10, scale = 2)
+    private BigDecimal stateTaxAmount;
+
+    @Column(name = "federal_tax_amount", precision = 10, scale = 2)
+    private BigDecimal federalTaxAmount;
+
+    @Column(name = "total_tax_amount", precision = 10, scale = 2)
+    private BigDecimal totalTaxAmount;
+
+    @Column(name = "tax_calculation_date")
+    private LocalDateTime taxCalculationDate;
+
     // Status and Workflow
     @Column(name = "status_code", nullable = false)
     private String statusCode;
@@ -330,6 +343,39 @@ public class Claim {
 
     public void setMaximumBenefitAmount(BigDecimal maximumBenefitAmount) {
         this.maximumBenefitAmount = maximumBenefitAmount;
+    }
+
+    // Tax Information getters and setters (ADDED)
+    public BigDecimal getStateTaxAmount() {
+        return stateTaxAmount;
+    }
+
+    public void setStateTaxAmount(BigDecimal stateTaxAmount) {
+        this.stateTaxAmount = stateTaxAmount;
+    }
+
+    public BigDecimal getFederalTaxAmount() {
+        return federalTaxAmount;
+    }
+
+    public void setFederalTaxAmount(BigDecimal federalTaxAmount) {
+        this.federalTaxAmount = federalTaxAmount;
+    }
+
+    public BigDecimal getTotalTaxAmount() {
+        return totalTaxAmount;
+    }
+
+    public void setTotalTaxAmount(BigDecimal totalTaxAmount) {
+        this.totalTaxAmount = totalTaxAmount;
+    }
+
+    public LocalDateTime getTaxCalculationDate() {
+        return taxCalculationDate;
+    }
+
+    public void setTaxCalculationDate(LocalDateTime taxCalculationDate) {
+        this.taxCalculationDate = taxCalculationDate;
     }
 
     public String getStatusCode() {
