@@ -179,7 +179,15 @@
             <groupId>wsdl4j</groupId>
             <artifactId>wsdl4j</artifactId>
         </dependency>
-    </dependencies>
+
+         <!-- javax.annotation for @Generated annotation -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+             
+    </dependencies>    
 
     <build>
         <plugins>
