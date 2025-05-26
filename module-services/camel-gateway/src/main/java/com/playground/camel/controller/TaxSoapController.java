@@ -134,28 +134,28 @@ public class TaxSoapController {
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class UpdateTaxCalculationRequest {
         
-        @XmlElement(required = true)
+        @XmlElement(name = "claimId", namespace = NAMESPACE_URI, required = true)
         private String claimId;
         
-        @XmlElement(required = true)
+        @XmlElement(name = "stateTaxAmount", namespace = NAMESPACE_URI, required = true)
         private BigDecimal stateTaxAmount;
         
-        @XmlElement(required = true)
+        @XmlElement(name = "federalTaxAmount", namespace = NAMESPACE_URI, required = true)
         private BigDecimal federalTaxAmount;
         
-        @XmlElement(required = true)
+        @XmlElement(name = "totalTaxAmount", namespace = NAMESPACE_URI, required = true)
         private BigDecimal totalTaxAmount;
         
-        @XmlElement
+        @XmlElement(name = "stateTaxRate", namespace = NAMESPACE_URI)
         private BigDecimal stateTaxRate;
         
-        @XmlElement
+        @XmlElement(name = "federalTaxRate", namespace = NAMESPACE_URI)
         private BigDecimal federalTaxRate;
         
-        @XmlElement
+        @XmlElement(name = "calculatedBy", namespace = NAMESPACE_URI)
         private String calculatedBy;
         
-        @XmlElement
+        @XmlElement(name = "calculatedAt", namespace = NAMESPACE_URI)
         private String calculatedAt;
         
         // Getters and Setters
@@ -202,25 +202,25 @@ public class TaxSoapController {
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class UpdateTaxCalculationResponse {
         
-        @XmlElement(required = true)
+        @XmlElement(name = "status", namespace = NAMESPACE_URI, required = true)
         private String status;
         
-        @XmlElement(required = true)
+        @XmlElement(name = "message", namespace = NAMESPACE_URI, required = true)
         private String message;
         
-        @XmlElement
+        @XmlElement(name = "claimId", namespace = NAMESPACE_URI)
         private String claimId;
         
-        @XmlElement
+        @XmlElement(name = "newStatus", namespace = NAMESPACE_URI)
         private String newStatus;
         
-        @XmlElement
+        @XmlElement(name = "newWorkflowStage", namespace = NAMESPACE_URI)
         private String newWorkflowStage;
         
-        @XmlElement
+        @XmlElement(name = "errorCode", namespace = NAMESPACE_URI)
         private String errorCode;
         
-        @XmlElement
+        @XmlElement(name = "processedAt", namespace = NAMESPACE_URI)
         private String processedAt;
         
         // Getters and Setters
