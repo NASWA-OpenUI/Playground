@@ -275,7 +275,6 @@ class TaxService:
         try:
             # Create SOAP envelope with proper namespace and structure
             soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
-
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <soap:Body>
         <UpdateTaxCalculation xmlns="http://camel-gateway/tax">
@@ -322,6 +321,7 @@ class TaxService:
             import traceback
             logger.error(f"Full error trace: {traceback.format_exc()}")
             return False
+
 # Initialize service
 tax_service = TaxService()
 
