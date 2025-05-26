@@ -180,9 +180,35 @@ func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
 }
 
 func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
-	// TODO: Replace with gRPC call to Camel when endpoint is ready
+	// Prepare gRPC payment update (equivalent to EmployerServices HTTP PUT)
+	paymentUpdate := map[string]interface{}{
+		"claimId":             payment.ClaimID,
+		"statusCode":          "PAID",
+		"statusDisplayName":   "Payment Processed", 
+		"weeklyBenefitAmount": payment.WeeklyBenefitAmount,
+		"maximumBenefit":      payment.MaximumBenefit,
+		"firstPaymentAmount":  payment.FirstPaymentAmount,
+		"updatedBy":           "paymentservices",
+		"notes": fmt.Sprintf("Payment processed. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f", 
+			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
+	}
+
+	// TODO: When Camel gRPC endpoint is ready, this will be a real gRPC call
+	// For now, log what would be sent via gRPC
+	paymentJSON, _ := json.Marshal(paymentUpdate)
+	log.Printf("🔄 [gRPC] Would send payment update to Camel Gateway:")
+	log.Printf("   Endpoint: %s/grpc/payment", ps.gatewayURL)
+	log.Printf("   Method: UpdateClaimPayment") 
+	log.Printf("   Payload: %s", string(paymentJSON))
+	
 	log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
 		payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
+	
+	// TODO: Replace with actual gRPC call:
+	// conn, err := grpc.Dial(ps.gatewayURL + ":grpc_port")
+	// client := NewPaymentServiceClient(conn)
+	// response, err := client.UpdateClaimPayment(ctx, &PaymentUpdateRequest{...})
+	
 	return nil
 }
 
