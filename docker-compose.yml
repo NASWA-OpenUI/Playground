@@ -5,10 +5,12 @@ services:
     ports:
       - "8080:8080"
       - "8081:8081"
+      - "9090:9090"
     depends_on:
       - claimant-services
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+      - GRPC_PORT=9090
     networks:
       - ui-modernization
     restart: unless-stopped
