@@ -289,6 +289,11 @@ class TaxService:
         </UpdateTaxCalculation>
     </soap:Body>
 </soap:Envelope>"""
+
+            # DEBUG: Print the actual SOAP XML being sent
+            print("=== SOAP XML BEING SENT ===")
+            print(soap_body)
+            print("=== END SOAP XML ===")
             
             headers = {
                 'Content-Type': 'text/xml; charset=utf-8',
