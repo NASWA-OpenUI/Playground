@@ -273,6 +273,10 @@ class TaxService:
     def send_tax_results_via_soap(self, claim_id, tax_data):
         """Send tax calculation results back to camel gateway via SOAP"""
         try:
+            logger.info(f"=== ENTERING send_tax_results_via_soap ===")
+            logger.info(f"claim_id parameter: {claim_id}")
+            logger.info(f"tax_data parameter: {tax_data}")
+            
             # Create SOAP envelope with proper namespace and structure
             soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
@@ -290,10 +294,9 @@ class TaxService:
     </soap:Body>
 </soap:Envelope>"""
 
-            # DEBUG: Print the actual SOAP XML being sent
-            print("=== SOAP XML BEING SENT ===")
-            print(soap_body)
-            print("=== END SOAP XML ===")
+            logger.info("=== SOAP XML BEING SENT ===")
+            logger.info(soap_body)
+            logger.info("=== END SOAP XML ===")
             
             headers = {
                 'Content-Type': 'text/xml; charset=utf-8',
@@ -301,7 +304,8 @@ class TaxService:
             }
             
             logger.info(f"Sending SOAP request for claim {claim_id}")
-            logger.debug(f"SOAP Body: {soap_body}")  # Add debug logging
+            logger.info(f"SOAP Headers: {headers}")
+            logger.info(f"Gateway URL: {self.gateway_url}/soap/tax")
             
             response = requests.post(
                 f"{self.gateway_url}/soap/tax",
@@ -311,7 +315,8 @@ class TaxService:
             )
             
             logger.info(f"SOAP Response Status: {response.status_code}")
-            logger.debug(f"SOAP Response Body: {response.text}")
+            logger.info(f"SOAP Response Headers: {response.headers}")
+            logger.info(f"SOAP Response Body: {response.text}")
             
             if response.status_code == 200:
                 logger.info(f"✅ Tax results sent via SOAP for claim {claim_id}")
