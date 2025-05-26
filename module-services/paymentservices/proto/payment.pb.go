@@ -63,7 +63,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{0}
+	return file_payment_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RegisterRequest) GetServiceId() string {
