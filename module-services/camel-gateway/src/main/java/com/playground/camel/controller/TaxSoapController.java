@@ -2,6 +2,7 @@ package com.playground.camel.controller;
 
 import com.playground.camel.model.Claim;
 import com.playground.camel.service.ClaimService;
+import com.playground.camel.repository.ClaimRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ws.server.endpoint.annotation.Endpoint;
 import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
@@ -24,6 +25,9 @@ public class TaxSoapController {
 
     @Autowired
     private ClaimService claimService;
+    
+    @Autowired
+    private ClaimRepository claimRepository;
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "UpdateTaxCalculation")
     @ResponsePayload
@@ -71,7 +75,7 @@ public class TaxSoapController {
                 request.getCalculatedBy() != null ? request.getCalculatedBy() : "tax-services");
             
             // Save the updated claim
-	    Claim updatedClaim = claimRepository.save(claim);
+            Claim updatedClaim = claimRepository.save(claim);
             
             logger.info("✅ Tax calculation completed for claim {}: State=${}, Federal=${}, Total=${}", 
                 request.getClaimId(), request.getStateTaxAmount(), 
