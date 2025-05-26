@@ -71,13 +71,7 @@ public class TaxSoapController {
                 request.getCalculatedBy() != null ? request.getCalculatedBy() : "tax-services");
             
             // Save the updated claim
-            Claim updatedClaim = claimService.updateClaimStatus(
-                claim.getClaimReferenceId(), 
-                claim.getStatusCode(), 
-                claim.getStatusDisplayName(),
-                claim.getUpdatedBy(),
-                "Tax calculation completed via SOAP"
-            );
+	    Claim updatedClaim = claimRepository.save(claim);
             
             logger.info("✅ Tax calculation completed for claim {}: State=${}, Federal=${}, Total=${}", 
                 request.getClaimId(), request.getStateTaxAmount(), 
