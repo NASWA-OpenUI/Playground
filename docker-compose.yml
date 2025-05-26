@@ -74,6 +74,7 @@ services:
       context: ./module-services/paymentservices
     ports:
       - "6000:6000"
+      - "9000:9000"
     environment:
       - PORT=6000
       - SERVICE_NAME=paymentservices
@@ -83,6 +84,8 @@ services:
       - MAX_WEEKLY_BENEFIT=600.00
       - REPLACEMENT_RATE=0.60
       - BENEFIT_WEEKS=26
+      - GRPC_PORT=9000
+      - CAMEL_GATEWAY_GRPC_URL=camel-gateway:9090 
     depends_on:
       redis:
         condition: service_healthy
