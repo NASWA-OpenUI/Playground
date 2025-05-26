@@ -275,18 +275,19 @@ class TaxService:
         try:
             # Create SOAP envelope with proper namespace and structure
             soap_body = f"""<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tax="http://camel-gateway/tax">
+
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <soap:Body>
-        <tax:UpdateTaxCalculation>
-            <tax:claimId>{claim_id}</tax:claimId>
-            <tax:stateTaxAmount>{tax_data['stateTaxAmount']}</tax:stateTaxAmount>
-            <tax:federalTaxAmount>{tax_data['federalTaxAmount']}</tax:federalTaxAmount>
-            <tax:totalTaxAmount>{tax_data['totalTaxAmount']}</tax:totalTaxAmount>
-            <tax:stateTaxRate>{tax_data['stateTaxRate']}</tax:stateTaxRate>
-            <tax:federalTaxRate>{tax_data['federalTaxRate']}</tax:federalTaxRate>
-            <tax:calculatedBy>tax-services</tax:calculatedBy>
-            <tax:calculatedAt>{datetime.now().isoformat()}</tax:calculatedAt>
-        </tax:UpdateTaxCalculation>
+        <UpdateTaxCalculation xmlns="http://camel-gateway/tax">
+            <claimId>{claim_id}</claimId>
+            <stateTaxAmount>{tax_data['stateTaxAmount']}</stateTaxAmount>
+            <federalTaxAmount>{tax_data['federalTaxAmount']}</federalTaxAmount>
+            <totalTaxAmount>{tax_data['totalTaxAmount']}</totalTaxAmount>
+            <stateTaxRate>{tax_data['stateTaxRate']}</stateTaxRate>
+            <federalTaxRate>{tax_data['federalTaxRate']}</federalTaxRate>
+            <calculatedBy>tax-services</calculatedBy>
+            <calculatedAt>{datetime.now().isoformat()}</calculatedAt>
+        </UpdateTaxCalculation>
     </soap:Body>
 </soap:Envelope>"""
             
@@ -321,7 +322,6 @@ class TaxService:
             import traceback
             logger.error(f"Full error trace: {traceback.format_exc()}")
             return False
-
 # Initialize service
 tax_service = TaxService()
 
