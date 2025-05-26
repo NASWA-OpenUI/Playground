@@ -34,7 +34,28 @@ public class TaxSoapController {
     public UpdateTaxCalculationResponse updateTaxCalculation(@RequestPayload UpdateTaxCalculationRequest request) {
         logger.info("🧮 SOAP Tax calculation received for claim: {}", request.getClaimId());
         
+        // Enhanced debugging to see what we're actually receiving
+        logger.info("🔍 Raw request object: {}", request);
+        logger.info("🔍 Request claimId: '{}'", request.getClaimId());
+        logger.info("🔍 Request stateTaxAmount: {}", request.getStateTaxAmount());
+        logger.info("🔍 Request federalTaxAmount: {}", request.getFederalTaxAmount());
+        logger.info("🔍 Request totalTaxAmount: {}", request.getTotalTaxAmount());
+        logger.info("🔍 Request calculatedBy: '{}'", request.getCalculatedBy());
+        
         try {
+            // Check if claimId is null or empty
+            if (request.getClaimId() == null) {
+                logger.error("❌ ClaimId is NULL in request");
+                return createErrorResponse("INVALID_REQUEST", "ClaimId cannot be null");
+            }
+            
+            if (request.getClaimId().trim().isEmpty()) {
+                logger.error("❌ ClaimId is EMPTY in request");
+                return createErrorResponse("INVALID_REQUEST", "ClaimId cannot be empty");
+            }
+            
+            logger.info("✅ ClaimId is valid: '{}'", request.getClaimId());
+            
             // Find the claim
             Optional<Claim> claimOpt = claimService.getClaimByReferenceId(request.getClaimId());
             if (!claimOpt.isPresent()) {
@@ -43,6 +64,7 @@ public class TaxSoapController {
             }
             
             Claim claim = claimOpt.get();
+            logger.info("✅ Found claim: {}", claim.getClaimReferenceId());
             
             // Validate claim is in correct status for tax calculation
             if (!Claim.Status.AWAITING_TAX_CALC.equals(claim.getStatusCode())) {
@@ -160,6 +182,20 @@ public class TaxSoapController {
         
         public String getCalculatedAt() { return calculatedAt; }
         public void setCalculatedAt(String calculatedAt) { this.calculatedAt = calculatedAt; }
+        
+        @Override
+        public String toString() {
+            return "UpdateTaxCalculationRequest{" +
+                    "claimId='" + claimId + '\'' +
+                    ", stateTaxAmount=" + stateTaxAmount +
+                    ", federalTaxAmount=" + federalTaxAmount +
+                    ", totalTaxAmount=" + totalTaxAmount +
+                    ", stateTaxRate=" + stateTaxRate +
+                    ", federalTaxRate=" + federalTaxRate +
+                    ", calculatedBy='" + calculatedBy + '\'' +
+                    ", calculatedAt='" + calculatedAt + '\'' +
+                    '}';
+        }
     }
 
     @XmlRootElement(name = "UpdateTaxCalculationResponse", namespace = NAMESPACE_URI)
