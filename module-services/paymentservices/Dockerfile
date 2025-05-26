@@ -6,17 +6,17 @@ WORKDIR /app
 # Install build dependencies
 RUN apk add --no-cache git
 
-# Copy go mod files
+# Copy go mod files first
 COPY go.mod ./
 # Copy go.sum if it exists (optional for initial build)
 COPY go.su[m] ./
 
-# Download dependencies and create go.sum
+# Copy source code (needed for go mod tidy to analyze imports)
+COPY . .
+
+# Download dependencies and ensure go.sum is created
 RUN go mod download
 RUN go mod tidy
-
-# Copy source code
-COPY . .
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o paymentservices .
