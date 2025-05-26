@@ -63,7 +63,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP(), []int{0}
+	return file_payment_proto_rawDescGZIP()(), []int{0}
 }
 
 func (x *RegisterRequest) GetServiceId() string {
@@ -146,7 +146,7 @@ func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{1}
+	return file_payment_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *RegisterResponse) GetSuccess() bool {
@@ -203,7 +203,7 @@ func (x *HeartbeatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatRequest.ProtoReflect.Descriptor instead.
 func (*HeartbeatRequest) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{2}
+	return file_payment_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *HeartbeatRequest) GetServiceId() string {
@@ -265,7 +265,7 @@ func (x *HeartbeatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HeartbeatResponse.ProtoReflect.Descriptor instead.
 func (*HeartbeatResponse) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{3}
+	return file_payment_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *HeartbeatResponse) GetSuccess() bool {
@@ -320,7 +320,7 @@ func (x *StatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatusRequest.ProtoReflect.Descriptor instead.
 func (*StatusRequest) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{4}
+	return file_payment_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *StatusRequest) GetStatus() string {
@@ -383,7 +383,7 @@ func (x *Claim) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Claim.ProtoReflect.Descriptor instead.
 func (*Claim) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{5}
+	return file_payment_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Claim) GetClaimReferenceId() string {
@@ -544,7 +544,7 @@ func (x *ClaimsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimsResponse.ProtoReflect.Descriptor instead.
 func (*ClaimsResponse) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{6}
+	return file_payment_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ClaimsResponse) GetClaims() []*Claim {
@@ -612,7 +612,7 @@ func (x *PaymentUpdateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PaymentUpdateRequest.ProtoReflect.Descriptor instead.
 func (*PaymentUpdateRequest) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{7}
+	return file_payment_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PaymentUpdateRequest) GetClaimId() string {
@@ -702,7 +702,7 @@ func (x *PaymentUpdateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PaymentUpdateResponse.ProtoReflect.Descriptor instead.
 func (*PaymentUpdateResponse) Descriptor() ([]byte, []int) {
-	return file_payment_proto_rawDescGZIP, []int{8}
+	return file_payment_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *PaymentUpdateResponse) GetSuccess() bool {
@@ -858,7 +858,7 @@ var (
 	file_payment_proto_rawDescData = file_payment_proto_rawDesc
 )
 
-func file_payment_proto_rawDescGZIP() []byte {
+func file_payment_proto_rawDescGZIP()() []byte {
 	file_payment_proto_rawDescOnce.Do(func() {
 		file_payment_proto_rawDescData = protoimpl.X.CompressGZIP(file_payment_proto_rawDescData)
 	})
