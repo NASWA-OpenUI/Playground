@@ -13,38 +13,43 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	pb "paymentservices/proto" // Import the generated protobuf package
 )
 
 type PaymentService struct {
-	redisClient    *redis.Client
-	gatewayURL     string
-	serviceName    string
-	servicePort    string
-	isRegistered   bool
-	grpcConn       *grpc.ClientConn
-	maxWeeklyBenefit float64
-	replacementRate  float64
-	benefitWeeks     int
+	redisClient       *redis.Client
+	gatewayURL        string
+	gatewayGrpcURL    string
+	serviceName       string
+	servicePort       string
+	isRegistered      bool
+	grpcConn          *grpc.ClientConn
+	grpcClient        pb.PaymentServiceClient
+	maxWeeklyBenefit  float64
+	replacementRate   float64
+	benefitWeeks      int
 }
 
 type ClaimData struct {
-	ClaimReferenceID     string  `json:"claimReferenceId"`
-	FirstName           string  `json:"firstName"`
-	LastName            string  `json:"lastName"`
-	EmailAddress        string  `json:"emailAddress"`
-	PhoneNumber         string  `json:"phoneNumber"`
-	EmployerName        string  `json:"employerName"`
-	EmployerID          string  `json:"employerId"`
-	EmploymentStartDate string  `json:"employmentStartDate"`
-	EmploymentEndDate   string  `json:"employmentEndDate"`
-	TotalAnnualEarnings float64 `json:"totalAnnualEarnings"`
+	ClaimReferenceID      string  `json:"claimReferenceId"`
+	FirstName            string  `json:"firstName"`
+	LastName             string  `json:"lastName"`
+	EmailAddress         string  `json:"emailAddress"`
+	PhoneNumber          string  `json:"phoneNumber"`
+	EmployerName         string  `json:"employerName"`
+	EmployerID           string  `json:"employerId"`
+	EmploymentStartDate  string  `json:"employmentStartDate"`
+	EmploymentEndDate    string  `json:"employmentEndDate"`
+	TotalAnnualEarnings  float64 `json:"totalAnnualEarnings"`
 	SeparationReasonCode string  `json:"separationReasonCode"`
 	SeparationExplanation string `json:"separationExplanation"`
-	StatusCode          string  `json:"statusCode"`
-	ReceivedTimestamp   string  `json:"receivedTimestamp"`
-	StateTaxAmount      float64 `json:"stateTaxAmount"`
-	FederalTaxAmount    float64 `json:"federalTaxAmount"`
-	TotalTaxAmount      float64 `json:"totalTaxAmount"`
+	StatusCode           string  `json:"statusCode"`
+	ReceivedTimestamp    string  `json:"receivedTimestamp"`
+	StateTaxAmount       float64 `json:"stateTaxAmount"`
+	FederalTaxAmount     float64 `json:"federalTaxAmount"`
+	TotalTaxAmount       float64 `json:"totalTaxAmount"`
 }
 
 type PaymentCalculation struct {
@@ -63,6 +68,7 @@ type PaymentCalculation struct {
 
 func NewPaymentService() *PaymentService {
 	gatewayURL := getEnv("CAMEL_GATEWAY_URL", "http://camel-gateway:8080")
+	gatewayGrpcURL := getEnv("CAMEL_GATEWAY_GRPC_URL", "camel-gateway:9090")
 	serviceName := getEnv("SERVICE_NAME", "paymentservices")
 	servicePort := getEnv("PORT", "6000")
 	
@@ -81,11 +87,34 @@ func NewPaymentService() *PaymentService {
 	return &PaymentService{
 		redisClient:      redisClient,
 		gatewayURL:      gatewayURL,
+		gatewayGrpcURL:  gatewayGrpcURL,
 		serviceName:     serviceName,
 		servicePort:     servicePort,
 		maxWeeklyBenefit: maxWeeklyBenefit,
 		replacementRate:  replacementRate,
 		benefitWeeks:     benefitWeeks,
+	}
+}
+
+func (ps *PaymentService) initGrpcConnection() error {
+	log.Printf("Connecting to Camel Gateway gRPC at %s", ps.gatewayGrpcURL)
+	
+	// Create gRPC connection with insecure credentials for internal service communication
+	conn, err := grpc.Dial(ps.gatewayGrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return fmt.Errorf("failed to connect to gRPC server: %v", err)
+	}
+	
+	ps.grpcConn = conn
+	ps.grpcClient = pb.NewPaymentServiceClient(conn)
+	
+	log.Println("✅ gRPC connection established")
+	return nil
+}
+
+func (ps *PaymentService) closeGrpcConnection() {
+	if ps.grpcConn != nil {
+		ps.grpcConn.Close()
 	}
 }
 
@@ -120,40 +149,121 @@ func (ps *PaymentService) calculateBenefits(claim ClaimData) PaymentCalculation 
 }
 
 func (ps *PaymentService) registerWithGateway() error {
-	// This will eventually be a gRPC call to Camel
-	// For now, using HTTP as fallback until Camel gRPC endpoint is ready
-	registrationData := map[string]interface{}{
-		"serviceId":      ps.serviceName,
-		"name":          "Payment Services",
-		"technology":    "Go + gRPC",
-		"protocol":      "gRPC",
-		"endpoint":      fmt.Sprintf("http://%s:%s/grpc", ps.serviceName, ps.servicePort),
-		"healthEndpoint": fmt.Sprintf("http://%s:%s/health", ps.serviceName, ps.servicePort),
+	if ps.grpcClient == nil {
+		return fmt.Errorf("gRPC client not initialized")
 	}
 
-	jsonData, _ := json.Marshal(registrationData)
-	log.Printf("Registering with gateway: %s", string(jsonData))
-	
-	// TODO: Replace with gRPC call when Camel endpoint is ready
-	ps.isRegistered = true
-	log.Println("✅ Successfully registered with gateway")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	request := &pb.RegisterRequest{
+		ServiceId:      ps.serviceName,
+		Name:          "Payment Services",
+		Technology:    "Go + gRPC",
+		Protocol:      "gRPC",
+		Endpoint:      fmt.Sprintf("%s:%s", ps.serviceName, ps.servicePort),
+		HealthEndpoint: fmt.Sprintf("http://%s:%s/health", ps.serviceName, ps.servicePort),
+	}
+
+	log.Printf("🔄 Registering with Camel Gateway via gRPC...")
+	response, err := ps.grpcClient.RegisterService(ctx, request)
+	if err != nil {
+		return fmt.Errorf("registration failed: %v", err)
+	}
+
+	if response.Success {
+		ps.isRegistered = true
+		log.Printf("✅ Successfully registered with gateway: %s", response.Message)
+	} else {
+		return fmt.Errorf("registration rejected: %s", response.Message)
+	}
+
 	return nil
 }
 
 func (ps *PaymentService) sendHeartbeat() error {
-	if !ps.isRegistered {
-		return fmt.Errorf("service not registered")
+	if !ps.isRegistered || ps.grpcClient == nil {
+		return fmt.Errorf("service not registered or gRPC client not available")
 	}
 
-	// TODO: Replace with gRPC call when Camel endpoint is ready
-	log.Println("💓 Heartbeat sent successfully")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	request := &pb.HeartbeatRequest{
+		ServiceId: ps.serviceName,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Status:    "UP",
+	}
+
+	response, err := ps.grpcClient.SendHeartbeat(ctx, request)
+	if err != nil {
+		return fmt.Errorf("heartbeat failed: %v", err)
+	}
+
+	if response.Success {
+		log.Printf("💓 Heartbeat sent successfully: %s", response.Message)
+	} else {
+		log.Printf("⚠️ Heartbeat warning: %s", response.Message)
+	}
+
 	return nil
 }
 
 func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
-	// TODO: Replace with gRPC call when Camel endpoint is ready
-	// For now, return mock data for testing
-	mockClaims := []ClaimData{
+	if ps.grpcClient == nil {
+		// Fallback to mock data if gRPC not available
+		return ps.getMockClaims(), nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	request := &pb.StatusRequest{
+		Status: "AWAITING_PAYMENT_PROCESSING",
+	}
+
+	response, err := ps.grpcClient.GetClaimsByStatus(ctx, request)
+	if err != nil {
+		log.Printf("⚠️ gRPC call failed, using mock data: %v", err)
+		return ps.getMockClaims(), nil
+	}
+
+	if !response.Success {
+		log.Printf("⚠️ Claims query unsuccessful: %s", response.Message)
+		return ps.getMockClaims(), nil
+	}
+
+	// Convert protobuf claims to our internal structure
+	var claims []ClaimData
+	for _, pbClaim := range response.Claims {
+		claim := ClaimData{
+			ClaimReferenceID:      pbClaim.ClaimReferenceId,
+			FirstName:            pbClaim.FirstName,
+			LastName:             pbClaim.LastName,
+			EmailAddress:         pbClaim.EmailAddress,
+			PhoneNumber:          pbClaim.PhoneNumber,
+			EmployerName:         pbClaim.EmployerName,
+			EmployerID:           pbClaim.EmployerId,
+			EmploymentStartDate:  pbClaim.EmploymentStartDate,
+			EmploymentEndDate:    pbClaim.EmploymentEndDate,
+			TotalAnnualEarnings:  pbClaim.TotalAnnualEarnings,
+			SeparationReasonCode: pbClaim.SeparationReasonCode,
+			SeparationExplanation: pbClaim.SeparationExplanation,
+			StatusCode:           pbClaim.StatusCode,
+			ReceivedTimestamp:    pbClaim.ReceivedTimestamp,
+			StateTaxAmount:       pbClaim.StateTaxAmount,
+			FederalTaxAmount:     pbClaim.FederalTaxAmount,
+			TotalTaxAmount:       pbClaim.TotalTaxAmount,
+		}
+		claims = append(claims, claim)
+	}
+
+	log.Printf("📋 Found %d claims awaiting payment processing via gRPC", len(claims))
+	return claims, nil
+}
+
+func (ps *PaymentService) getMockClaims() []ClaimData {
+	return []ClaimData{
 		{
 			ClaimReferenceID:     "CLM-2025-001",
 			FirstName:           "John",
@@ -174,13 +284,48 @@ func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
 			TotalTaxAmount:      1950.00,
 		},
 	}
-
-	log.Printf("Found %d claims awaiting payment processing", len(mockClaims))
-	return mockClaims, nil
 }
 
 func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
-	// Prepare gRPC payment update (equivalent to EmployerServices HTTP PUT)
+	if ps.grpcClient == nil {
+		log.Printf("⚠️ gRPC client not available, would send payment update:")
+		ps.logPaymentUpdate(payment)
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	request := &pb.PaymentUpdateRequest{
+		ClaimId:             payment.ClaimID,
+		Status:              "PAID",
+		WeeklyBenefitAmount: payment.WeeklyBenefitAmount,
+		MaximumBenefit:      payment.MaximumBenefit,
+		FirstPaymentAmount:  payment.FirstPaymentAmount,
+		UpdatedBy:           "paymentservices",
+		Notes: fmt.Sprintf("Payment processed. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f", 
+			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
+	}
+
+	log.Printf("🔄 Sending payment update to Camel Gateway via gRPC...")
+	response, err := ps.grpcClient.UpdateClaimPayment(ctx, request)
+	if err != nil {
+		return fmt.Errorf("payment update failed: %v", err)
+	}
+
+	if response.Success {
+		log.Printf("✅ Payment update successful: %s", response.Message)
+	} else {
+		log.Printf("⚠️ Payment update warning: %s", response.Message)
+	}
+
+	log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
+		payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
+	
+	return nil
+}
+
+func (ps *PaymentService) logPaymentUpdate(payment PaymentCalculation) {
 	paymentUpdate := map[string]interface{}{
 		"claimId":             payment.ClaimID,
 		"statusCode":          "PAID",
@@ -193,23 +338,10 @@ func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
 			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
 	}
 
-	// TODO: When Camel gRPC endpoint is ready, this will be a real gRPC call
-	// For now, log what would be sent via gRPC
 	paymentJSON, _ := json.Marshal(paymentUpdate)
-	log.Printf("🔄 [gRPC] Would send payment update to Camel Gateway:")
-	log.Printf("   Endpoint: %s/grpc/payment", ps.gatewayURL)
+	log.Printf("   Endpoint: %s", ps.gatewayGrpcURL)
 	log.Printf("   Method: UpdateClaimPayment") 
 	log.Printf("   Payload: %s", string(paymentJSON))
-	
-	log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
-		payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
-	
-	// TODO: Replace with actual gRPC call:
-	// conn, err := grpc.Dial(ps.gatewayURL + ":grpc_port")
-	// client := NewPaymentServiceClient(conn)
-	// response, err := client.UpdateClaimPayment(ctx, &PaymentUpdateRequest{...})
-	
-	return nil
 }
 
 func (ps *PaymentService) storePayment(payment PaymentCalculation) error {
@@ -250,9 +382,15 @@ func (ps *PaymentService) getStoredPayments() ([]PaymentCalculation, error) {
 func (ps *PaymentService) backgroundTasks() {
 	time.Sleep(5 * time.Second) // Wait for app to start
 
+	// Initialize gRPC connection
+	if err := ps.initGrpcConnection(); err != nil {
+		log.Printf("⚠️ Failed to initialize gRPC connection: %v", err)
+		log.Println("Will continue with limited functionality...")
+	}
+
 	// Register with gateway
 	if err := ps.registerWithGateway(); err != nil {
-		log.Printf("Failed to register with gateway: %v", err)
+		log.Printf("⚠️ Failed to register with gateway: %v", err)
 	}
 
 	ticker := time.NewTicker(30 * time.Second)
@@ -307,6 +445,7 @@ func setupRoutes(ps *PaymentService) *gin.Engine {
 			"status":    "UP",
 			"service":   "paymentservices",
 			"timestamp": time.Now().Format(time.RFC3339),
+			"grpc":      ps.grpcClient != nil,
 		})
 	})
 
@@ -386,6 +525,9 @@ func main() {
 	log.Println("🚀 Starting Payment Services...")
 
 	ps := NewPaymentService()
+
+	// Ensure gRPC connection is closed on exit
+	defer ps.closeGrpcConnection()
 
 	// Test Redis connection
 	ctx := context.Background()
