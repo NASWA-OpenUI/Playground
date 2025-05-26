@@ -10,7 +10,10 @@ RUN apk add --no-cache git
 COPY go.mod ./
 # Copy go.sum if it exists (optional for initial build)
 COPY go.su[m] ./
+
+# Download dependencies and create go.sum
 RUN go mod download
+RUN go mod tidy
 
 # Copy source code
 COPY . .
