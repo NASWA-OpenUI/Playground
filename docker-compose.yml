@@ -69,6 +69,33 @@ services:
       - ui-modernization
     restart: unless-stopped
 
+  paymentservices:
+    build:
+      context: ./module-services/paymentservices
+    ports:
+      - "6000:6000"
+    environment:
+      - PORT=6000
+      - SERVICE_NAME=paymentservices
+      - CAMEL_GATEWAY_URL=http://camel-gateway:8080
+      - REDIS_URL=redis:6379
+      - REDIS_PASSWORD=
+      - MAX_WEEKLY_BENEFIT=600.00
+      - REPLACEMENT_RATE=0.60
+      - BENEFIT_WEEKS=26
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ui-modernization
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   mongodb:
     image: mongo:latest
     ports:
@@ -124,10 +151,26 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ui-modernization
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
 volumes:
   mongodb_data:
   mysql_data:
   tax_postgres_data:
+  redis_data:
 
 networks:
   ui-modernization:
