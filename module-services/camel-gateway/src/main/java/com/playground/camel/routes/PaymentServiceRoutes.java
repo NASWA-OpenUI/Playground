@@ -2,6 +2,7 @@ package com.playground.camel.routes;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
+import payment.PaymentProto.*;
 
 @Component
 public class PaymentServiceRoutes extends RouteBuilder {
@@ -10,7 +11,6 @@ public class PaymentServiceRoutes extends RouteBuilder {
     public void configure() throws Exception {
         
         // gRPC Server Configuration - listens on port 9090
-        // The service will be exposed at grpc://0.0.0.0:9090/payment.PaymentService
         
         // 1. RegisterService - Payment service registration
         from("grpc://0.0.0.0:9090/payment.PaymentService/RegisterService?synchronous=true")
@@ -18,38 +18,39 @@ public class PaymentServiceRoutes extends RouteBuilder {
             .log("🚀 gRPC: RegisterService called for ${body.serviceId}")
             .process(exchange -> {
                 // Extract the request (Camel automatically deserializes the protobuf)
-                var request = exchange.getIn().getBody();
+                RegisterRequest request = exchange.getIn().getBody(RegisterRequest.class);
                 log.info("Received registration request: {}", request);
                 
-                // Call the existing service registration logic
-                exchange.getIn().setHeader("serviceId", extractField(request, "serviceId"));
-                exchange.getIn().setHeader("name", extractField(request, "name"));
-                exchange.getIn().setHeader("technology", extractField(request, "technology"));
-                exchange.getIn().setHeader("protocol", extractField(request, "protocol"));
-                exchange.getIn().setHeader("endpoint", extractField(request, "endpoint"));
-                exchange.getIn().setHeader("healthEndpoint", extractField(request, "healthEndpoint"));
+                // Set headers for existing service registration logic
+                exchange.getIn().setHeader("serviceId", request.getServiceId());
+                exchange.getIn().setHeader("name", request.getName());
+                exchange.getIn().setHeader("technology", request.getTechnology());
+                exchange.getIn().setHeader("protocol", request.getProtocol());
+                exchange.getIn().setHeader("endpoint", request.getEndpoint());
+                exchange.getIn().setHeader("healthEndpoint", request.getHealthEndpoint());
             })
             .doTry()
                 // Use existing service registration logic
                 .bean("serviceRegistrationService", "registerService(${header.serviceId}, ${header.name}, ${header.technology}, ${header.protocol}, ${header.endpoint}, ${header.healthEndpoint})")
                 .log("✅ gRPC: Service registered successfully: ${header.serviceId}")
                 
-                // Build success response
+                // Build success response using proper protobuf builder
                 .process(exchange -> {
-                    // Create response using the generated protobuf classes
-                    var responseBuilder = createResponseBuilder("payment.RegisterResponse")
-                            .setField("success", true)
-                            .setField("message", "Service " + exchange.getIn().getHeader("serviceId") + " registered successfully");
-                    exchange.getIn().setBody(responseBuilder.build());
+                    RegisterResponse response = RegisterResponse.newBuilder()
+                            .setSuccess(true)
+                            .setMessage("Service " + exchange.getIn().getHeader("serviceId") + " registered successfully")
+                            .build();
+                    exchange.getIn().setBody(response);
                 })
                 
             .doCatch(Exception.class)
                 .log("❌ gRPC: Registration failed: ${exception.message}")
                 .process(exchange -> {
-                    var responseBuilder = createResponseBuilder("payment.RegisterResponse")
-                            .setField("success", false)
-                            .setField("message", "Registration failed: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage());
-                    exchange.getIn().setBody(responseBuilder.build());
+                    RegisterResponse response = RegisterResponse.newBuilder()
+                            .setSuccess(false)
+                            .setMessage("Registration failed: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage())
+                            .build();
+                    exchange.getIn().setBody(response);
                 })
             .end();
 
@@ -58,9 +59,9 @@ public class PaymentServiceRoutes extends RouteBuilder {
             .routeId("grpc-send-heartbeat")
             .log("💓 gRPC: Heartbeat received from ${body.serviceId}")
             .process(exchange -> {
-                var request = exchange.getIn().getBody();
-                exchange.getIn().setHeader("serviceId", extractField(request, "serviceId"));
-                exchange.getIn().setHeader("status", extractField(request, "status"));
+                HeartbeatRequest request = exchange.getIn().getBody(HeartbeatRequest.class);
+                exchange.getIn().setHeader("serviceId", request.getServiceId());
+                exchange.getIn().setHeader("status", request.getStatus());
             })
             .doTry()
                 // Update heartbeat using existing service
@@ -68,19 +69,21 @@ public class PaymentServiceRoutes extends RouteBuilder {
                 .log("✅ gRPC: Heartbeat updated for ${header.serviceId}")
                 
                 .process(exchange -> {
-                    var responseBuilder = createResponseBuilder("payment.HeartbeatResponse")
-                            .setField("success", true)
-                            .setField("message", "Heartbeat acknowledged");
-                    exchange.getIn().setBody(responseBuilder.build());
+                    HeartbeatResponse response = HeartbeatResponse.newBuilder()
+                            .setSuccess(true)
+                            .setMessage("Heartbeat acknowledged")
+                            .build();
+                    exchange.getIn().setBody(response);
                 })
                 
             .doCatch(Exception.class)
                 .log("❌ gRPC: Heartbeat failed: ${exception.message}")
                 .process(exchange -> {
-                    var responseBuilder = createResponseBuilder("payment.HeartbeatResponse")
-                            .setField("success", false)
-                            .setField("message", "Heartbeat failed: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage());
-                    exchange.getIn().setBody(responseBuilder.build());
+                    HeartbeatResponse response = HeartbeatResponse.newBuilder()
+                            .setSuccess(false)
+                            .setMessage("Heartbeat failed: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage())
+                            .build();
+                    exchange.getIn().setBody(response);
                 })
             .end();
 
@@ -89,8 +92,8 @@ public class PaymentServiceRoutes extends RouteBuilder {
             .routeId("grpc-get-claims-by-status")
             .log("📋 gRPC: GetClaimsByStatus called for status: ${body.status}")
             .process(exchange -> {
-                var request = exchange.getIn().getBody();
-                String status = extractField(request, "status").toString();
+                StatusRequest request = exchange.getIn().getBody(StatusRequest.class);
+                String status = request.getStatus();
                 exchange.getIn().setHeader("statusCode", status);
             })
             .doTry()
@@ -99,25 +102,24 @@ public class PaymentServiceRoutes extends RouteBuilder {
                 .log("✅ gRPC: Found claims for status ${header.statusCode}")
                 
                 .process(exchange -> {
-                    // Convert JSON response to protobuf Claims
-                    String jsonClaims = exchange.getIn().getBody(String.class);
-                    var claims = convertJsonToPbClaims(jsonClaims);
+                    // For now, return empty claims list - we can enhance this later
+                    // The actual claim conversion would require mapping your Claim entities to protobuf Claims
+                    ClaimsResponse response = ClaimsResponse.newBuilder()
+                            .setSuccess(true)
+                            .setMessage("Claims query successful for status " + exchange.getIn().getHeader("statusCode"))
+                            .build();
                     
-                    var responseBuilder = createResponseBuilder("payment.ClaimsResponse")
-                            .setField("claims", claims)
-                            .setField("success", true)
-                            .setField("message", "Found " + claims.size() + " claims with status " + exchange.getIn().getHeader("statusCode"));
-                    
-                    exchange.getIn().setBody(responseBuilder.build());
+                    exchange.getIn().setBody(response);
                 })
                 
             .doCatch(Exception.class)
                 .log("❌ gRPC: GetClaimsByStatus failed: ${exception.message}")
                 .process(exchange -> {
-                    var responseBuilder = createResponseBuilder("payment.ClaimsResponse")
-                            .setField("success", false)
-                            .setField("message", "Failed to get claims: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage());
-                    exchange.getIn().setBody(responseBuilder.build());
+                    ClaimsResponse response = ClaimsResponse.newBuilder()
+                            .setSuccess(false)
+                            .setMessage("Failed to get claims: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage())
+                            .build();
+                    exchange.getIn().setBody(response);
                 })
             .end();
 
@@ -126,18 +128,18 @@ public class PaymentServiceRoutes extends RouteBuilder {
             .routeId("grpc-update-claim-payment")
             .log("💰 gRPC: UpdateClaimPayment called for claim ${body.claimId}")
             .process(exchange -> {
-                var request = exchange.getIn().getBody();
-                exchange.getIn().setHeader("claimReferenceId", extractField(request, "claimId"));
-                exchange.getIn().setHeader("statusCode", extractField(request, "status"));
+                PaymentUpdateRequest request = exchange.getIn().getBody(PaymentUpdateRequest.class);
+                exchange.getIn().setHeader("claimReferenceId", request.getClaimId());
+                exchange.getIn().setHeader("statusCode", request.getStatus());
                 exchange.getIn().setHeader("statusDisplayName", "Payment Processed");
-                exchange.getIn().setHeader("updatedBy", extractField(request, "updatedBy"));
+                exchange.getIn().setHeader("updatedBy", request.getUpdatedBy());
                 
                 // Build payment notes with amounts
                 String notes = String.format("Payment processed via gRPC. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f. %s",
-                    extractField(request, "weeklyBenefitAmount"),
-                    extractField(request, "maximumBenefit"), 
-                    extractField(request, "firstPaymentAmount"),
-                    extractField(request, "notes"));
+                    request.getWeeklyBenefitAmount(),
+                    request.getMaximumBenefit(), 
+                    request.getFirstPaymentAmount(),
+                    request.getNotes());
                 exchange.getIn().setHeader("notes", notes);
             })
             .doTry()
@@ -146,56 +148,22 @@ public class PaymentServiceRoutes extends RouteBuilder {
                 .log("✅ gRPC: Payment update successful for claim ${header.claimReferenceId}")
                 
                 .process(exchange -> {
-                    var responseBuilder = createResponseBuilder("payment.PaymentUpdateResponse")
-                            .setField("success", true)
-                            .setField("message", "Payment updated successfully for claim " + exchange.getIn().getHeader("claimReferenceId"));
-                    exchange.getIn().setBody(responseBuilder.build());
+                    PaymentUpdateResponse response = PaymentUpdateResponse.newBuilder()
+                            .setSuccess(true)
+                            .setMessage("Payment updated successfully for claim " + exchange.getIn().getHeader("claimReferenceId"))
+                            .build();
+                    exchange.getIn().setBody(response);
                 })
                 
             .doCatch(Exception.class)
                 .log("❌ gRPC: UpdateClaimPayment failed: ${exception.message}")
                 .process(exchange -> {
-                    var responseBuilder = createResponseBuilder("payment.PaymentUpdateResponse")
-                            .setField("success", false)
-                            .setField("message", "Payment update failed: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage());
-                    exchange.getIn().setBody(responseBuilder.build());
+                    PaymentUpdateResponse response = PaymentUpdateResponse.newBuilder()
+                            .setSuccess(false)
+                            .setMessage("Payment update failed: " + exchange.getProperty("CamelExceptionCaught", Exception.class).getMessage())
+                            .build();
+                    exchange.getIn().setBody(response);
                 })
             .end();
-    }
-
-    // Helper methods for protobuf handling
-    private Object extractField(Object message, String fieldName) {
-        // Use reflection or direct method calls to extract fields from protobuf message
-        try {
-            var method = message.getClass().getMethod("get" + capitalize(fieldName));
-            return method.invoke(message);
-        } catch (Exception e) {
-            log.warn("Failed to extract field {} from message: {}", fieldName, e.getMessage());
-            return "";
-        }
-    }
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
-    }
-
-    private Object createResponseBuilder(String messageType) {
-        // This will use the generated protobuf classes
-        try {
-            String builderClassName = messageType.replace("payment.", "payment.") + "$Builder";
-            Class<?> messageClass = Class.forName(builderClassName);
-            var newBuilderMethod = messageClass.getEnclosingClass().getMethod("newBuilder");
-            return newBuilderMethod.invoke(null);
-        } catch (Exception e) {
-            log.error("Failed to create response builder for {}: {}", messageType, e.getMessage());
-            throw new RuntimeException("Failed to create protobuf response", e);
-        }
-    }
-
-    private java.util.List<Object> convertJsonToPbClaims(String jsonClaims) {
-        // Convert JSON claims to protobuf Claim objects
-        // This is a simplified version - you might want to use Jackson for proper JSON parsing
-        return java.util.Collections.emptyList(); // Placeholder for now
     }
 }
