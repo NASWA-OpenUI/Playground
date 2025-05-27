@@ -610,6 +610,32 @@
         </div>
     </section>
 
+    <!-- Status Overview - Middle Section -->
+    <div class="container">
+        <div class="status-overview">
+            <div class="status-card">
+                <div class="status-label">Service Status</div>
+                <div class="status-value">ONLINE</div>
+                <div class="status-subtext">Claims Processing</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Technology</div>
+                <div class="status-value">GraphQL</div>
+                <div class="status-subtext">API Ready</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Security</div>
+                <div class="status-value">SSL</div>
+                <div class="status-subtext">Encrypted</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Response Time</div>
+                <div class="status-value">&lt;200ms</div>
+                <div class="status-subtext">Average</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Area -->
     <div id="notification" class="notification" style="display: none;">
         <div class="notification-content">
@@ -790,11 +816,6 @@
     <footer class="footer">
         <div class="footer-content">
             <p>&copy; 2025 - NASWA Claimant Services | Unemployment Insurance System</p>
-            <div class="footer-links">
-                <a href="#submit-claim">Submit Claim</a>
-                <a href="#claim-status">Check Status</a>
-                <a href="/health">Service Health</a>
-            </div>
         </div>
     </footer>
 
@@ -804,8 +825,6 @@
 
         // Global variables
         let currentClaim = null;
-        let statusPollingInterval = null;
-        let pollingActive = false;
 
         // DOM Elements
         const claimForm = document.getElementById('claimForm');
@@ -958,13 +977,10 @@
                 
                 if (result.success) {
                     currentClaim = result.claim;
-                    showNotification('Claim submitted successfully! Monitoring status...', 'success');
+                    showNotification('Claim submitted successfully!', 'success');
                     
                     // Show claim status
                     displayClaimStatus(result.claim);
-                    
-                    // Start polling for status updates
-                    startStatusPolling(result.claim.claimId);
                     
                     // Scroll to status section
                     document.getElementById('claim-status').scrollIntoView({
@@ -1145,11 +1161,6 @@
                 if (result.data.getClaim) {
                     currentClaim = result.data.getClaim;
                     displayClaimStatus(result.data.getClaim);
-                    
-                    // If this was called from URL params, start polling
-                    if (claimId && !pollingActive) {
-                        startStatusPolling(claimId);
-                    }
                 } else {
                     showNotification('Claim not found.', 'error');
                 }
@@ -1367,11 +1378,6 @@
         function hideNotification() {
             notification.style.display = 'none';
         }
-        
-        // Cleanup polling when page unloads
-        window.addEventListener('beforeunload', function() {
-            stopStatusPolling();
-        });
     </script>
 </body>
 </html>
