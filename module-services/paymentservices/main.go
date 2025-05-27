@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -272,7 +273,7 @@ func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
 	// Try multiple possible claims endpoints
 	endpoints := []string{
 		"/api/claims?status=AWAITING_PAYMENT",
-		"/api/claims?status=AWAITING_PAYMENT_PROCESSING",
+		"/api/claims?status=AWAITING_PAYMENT_PROCESSING", 
 		"/api/claims/status/AWAITING_PAYMENT",
 		"/api/claims/status/AWAITING_PAYMENT_PROCESSING",
 		"/claims?status=AWAITING_PAYMENT",
@@ -302,7 +303,7 @@ func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
 	}
 	
 	log.Printf("📋 No claims found awaiting payment processing")
-	return []ClaimData{}, nil // Return empty slice instead of mock data
+	return []ClaimData{}, nil
 }
 
 func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
