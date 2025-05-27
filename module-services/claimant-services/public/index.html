@@ -102,30 +102,47 @@
             padding: 2rem;
         }
 
-        /* Hero Section with gradient */
-        .hero {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 4rem 0;
-            text-align: center;
+        /* Status Overview matching Camel's card layout */
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 3rem;
         }
 
-        .hero-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 2rem;
+        .status-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 4px solid var(--secondary-color);
         }
 
-        .hero h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            font-weight: 600;
+        .status-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
         }
 
-        .hero p {
-            font-size: 1.2rem;
-            opacity: 0.9;
+        .status-label {
+            font-size: 0.875rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .status-subtext {
+            font-size: 0.75rem;
+            color: #888;
         }
 
         /* Notification Styles - matching camel-gateway */
@@ -536,14 +553,6 @@
                 gap: 0.5rem;
             }
 
-            .hero h1 {
-                font-size: 2rem;
-            }
-
-            .hero-container, .container {
-                padding: 1rem;
-            }
-
             .form-container, .status-container {
                 padding: 1.5rem;
             }
@@ -586,7 +595,7 @@
     <header>
         <div class="header-container">
             <div class="logo">
-                <img src="/naswa_logo.png" alt="NASWA Logo" class="logo-icon">
+                <img src="naswa_logo.png" alt="NASWA Logo" class="logo-icon">
                 <div>
                     <h1>NASWA Claimant Services</h1>
                     <p>Unemployment Insurance Claims Processing</p>
@@ -601,14 +610,6 @@
             </nav>
         </div>
     </header>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-container">
-            <h1>Unemployment Insurance Claims</h1>
-            <p>Submit your unemployment insurance claim quickly and securely through our modernized platform.</p>
-        </div>
-    </section>
 
     <!-- Status Overview - Middle Section -->
     <div class="container">
