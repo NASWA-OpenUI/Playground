@@ -17,12 +17,12 @@
     </div>
     <div class="status-card">
         <div class="status-label">State Tax Rate</div>
-        <div class="status-value">{{ "%.2f"|format(tax_rates.state_tax_rate * 100) if tax_rates else "2.00" }}%</div>
+        <div class="status-value">{{ "%.2f"|format(tax_rates.state_tax_rate) if tax_rates else "2.00" }}%</div>
         <div class="status-subtext">Current Rate</div>
     </div>
     <div class="status-card">
         <div class="status-label">Federal Tax Rate</div>
-        <div class="status-value">{{ "%.2f"|format(tax_rates.federal_tax_rate * 100) if tax_rates else "0.60" }}%</div>
+        <div class="status-value">{{ "%.2f"|format(tax_rates.federal_tax_rate *) if tax_rates else "0.60" }}%</div>
         <div class="status-subtext">Current Rate</div>
     </div>
 </div>
@@ -80,11 +80,11 @@
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f1f3f4;">
                 <span style="font-weight: 500;">State Tax Rate:</span>
-                <span>{{ "%.4f"|format(tax_rates.state_tax_rate) }} ({{ "%.2f"|format(tax_rates.state_tax_rate * 100) }}%)</span>
+                <span>{{ "%.4f"|format(tax_rates.state_tax_rate) }} ({{ "%.2f"|format(tax_rates.state_tax_rate) }}%)</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f1f3f4;">
                 <span style="font-weight: 500;">Federal Tax Rate:</span>
-                <span>{{ "%.4f"|format(tax_rates.federal_tax_rate) }} ({{ "%.2f"|format(tax_rates.federal_tax_rate * 100) }}%)</span>
+                <span>{{ "%.4f"|format(tax_rates.federal_tax_rate) }} ({{ "%.2f"|format(tax_rates.federal_tax_rate) }}%)</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
                 <span style="font-weight: 500;">Last Updated:</span>
