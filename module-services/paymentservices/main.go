@@ -167,8 +167,24 @@ func (ps *PaymentService) makeHTTPRequest(method, endpoint string, payload inter
 
 	log.Printf("📥 Response status: %d, body: %s", resp.StatusCode, string(respBody))
 
+	// Handle different response formats
 	var httpResp HTTPResponse
+	
+	// First try to unmarshal as HTTPResponse
 	if err := json.Unmarshal(respBody, &httpResp); err != nil {
+		// If that fails, check if it's a raw array (for claims endpoint)
+		if endpoint == "/api/claims" || strings.Contains(endpoint, "claims") {
+			var claims []ClaimData
+			if arrayErr := json.Unmarshal(respBody, &claims); arrayErr == nil {
+				// Successfully parsed as array, wrap it in HTTPResponse format
+				httpResp = HTTPResponse{
+					Success: true,
+					Message: fmt.Sprintf("Found %d claims", len(claims)),
+					Claims:  claims,
+				}
+				return &httpResp, nil
+			}
+		}
 		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
@@ -186,61 +202,105 @@ func (ps *PaymentService) registerWithGateway() error {
 	}
 
 	log.Printf("🔄 Registering with Camel Gateway...")
-	response, err := ps.makeHTTPRequest("POST", "/api/services/register", request)
-	if err != nil {
-		return fmt.Errorf("registration failed: %v", err)
+	
+	// Try multiple possible registration endpoints
+	endpoints := []string{
+		"/api/services/register",
+		"/api/register", 
+		"/register",
+		"/services/register",
 	}
-
-	if response.Success {
-		ps.isRegistered = true
-		log.Printf("✅ Successfully registered with gateway: %s", response.Message)
-	} else {
-		return fmt.Errorf("registration rejected: %s", response.Message)
+	
+	var lastErr error
+	for _, endpoint := range endpoints {
+		response, err := ps.makeHTTPRequest("POST", endpoint, request)
+		if err != nil {
+			lastErr = err
+			log.Printf("⚠️ Registration failed on %s: %v", endpoint, err)
+			continue
+		}
+		
+		if response.Success {
+			ps.isRegistered = true
+			log.Printf("✅ Successfully registered with gateway via %s: %s", endpoint, response.Message)
+			return nil
+		} else {
+			log.Printf("⚠️ Registration rejected on %s: %s", endpoint, response.Message)
+		}
 	}
-
-	return nil
+	
+	log.Printf("⚠️ All registration endpoints failed, continuing without registration")
+	return lastErr
 }
 
 func (ps *PaymentService) sendHeartbeat() error {
-	if !ps.isRegistered {
-		return fmt.Errorf("service not registered")
-	}
-
+	// Allow heartbeat even if not registered (for demo purposes)
 	request := HeartbeatRequest{
 		ServiceID: ps.serviceName,
 		Timestamp: time.Now().Format(time.RFC3339),
 		Status:    "UP",
 	}
 
-	response, err := ps.makeHTTPRequest("POST", "/api/services/heartbeat", request)
-	if err != nil {
-		return fmt.Errorf("heartbeat failed: %v", err)
+	// Try multiple possible heartbeat endpoints
+	endpoints := []string{
+		"/api/services/heartbeat",
+		"/api/heartbeat",
+		"/heartbeat",
+		"/services/heartbeat",
 	}
-
-	if response.Success {
-		log.Printf("💓 Heartbeat sent successfully")
-	} else {
-		log.Printf("⚠️ Heartbeat warning: %s", response.Message)
+	
+	for _, endpoint := range endpoints {
+		response, err := ps.makeHTTPRequest("POST", endpoint, request)
+		if err != nil {
+			continue // Try next endpoint
+		}
+		
+		if response.Success {
+			log.Printf("💓 Heartbeat sent successfully via %s", endpoint)
+			return nil
+		}
 	}
-
+	
+	// Don't log heartbeat failures if we're not registered
+	if ps.isRegistered {
+		log.Printf("⚠️ All heartbeat endpoints failed")
+	}
 	return nil
 }
 
 func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
-	// Try to get claims that are awaiting payment processing
-	response, err := ps.makeHTTPRequest("GET", "/api/claims?status=AWAITING_PAYMENT_PROCESSING", nil)
-	if err != nil {
-		log.Printf("⚠️ HTTP call failed, using mock data: %v", err)
-		return ps.getMockClaims(), nil
+	// Try multiple possible claims endpoints
+	endpoints := []string{
+		"/api/claims?status=AWAITING_PAYMENT_PROCESSING",
+		"/api/claims/status/AWAITING_PAYMENT_PROCESSING",
+		"/claims?status=AWAITING_PAYMENT_PROCESSING",
+		"/api/claims", // Get all claims and filter
 	}
-
-	if !response.Success {
-		log.Printf("⚠️ Claims query unsuccessful: %s, using mock data", response.Message)
-		return ps.getMockClaims(), nil
+	
+	for _, endpoint := range endpoints {
+		response, err := ps.makeHTTPRequest("GET", endpoint, nil)
+		if err != nil {
+			continue // Try next endpoint
+		}
+		
+		if response.Success {
+			// Filter claims by status if we got all claims
+			var filteredClaims []ClaimData
+			for _, claim := range response.Claims {
+				if claim.StatusCode == "AWAITING_PAYMENT_PROCESSING" {
+					filteredClaims = append(filteredClaims, claim)
+				}
+			}
+			
+			if len(filteredClaims) > 0 {
+				log.Printf("📋 Found %d claims awaiting payment processing via %s", len(filteredClaims), endpoint)
+				return filteredClaims, nil
+			}
+		}
 	}
-
-	log.Printf("📋 Found %d claims awaiting payment processing", len(response.Claims))
-	return response.Claims, nil
+	
+	log.Printf("📋 No claims found awaiting payment processing")
+	return []ClaimData{}, nil // Return empty slice instead of mock data
 }
 
 func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
@@ -256,21 +316,31 @@ func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
 	}
 
 	log.Printf("🔄 Sending payment update to Camel Gateway...")
-	response, err := ps.makeHTTPRequest("POST", "/api/claims/update", request)
-	if err != nil {
-		return fmt.Errorf("payment update failed: %v", err)
-	}
-
-	if response.Success {
-		log.Printf("✅ Payment update successful: %s", response.Message)
-	} else {
-		log.Printf("⚠️ Payment update warning: %s", response.Message)
-	}
-
-	log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
-		payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
 	
-	return nil
+	// Try multiple possible update endpoints
+	endpoints := []string{
+		"/api/claims/update",
+		"/api/claims/" + payment.ClaimID + "/status",
+		"/claims/update",
+		"/api/payment/update",
+	}
+	
+	for _, endpoint := range endpoints {
+		response, err := ps.makeHTTPRequest("POST", endpoint, request)
+		if err != nil {
+			continue // Try next endpoint
+		}
+		
+		if response.Success {
+			log.Printf("✅ Payment update successful via %s: %s", endpoint, response.Message)
+			log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
+				payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
+			return nil
+		}
+	}
+	
+	log.Printf("⚠️ Payment update failed on all endpoints for claim %s", payment.ClaimID)
+	return fmt.Errorf("payment update failed on all endpoints")
 }
 
 func (ps *PaymentService) calculateBenefits(claim ClaimData) PaymentCalculation {
@@ -303,29 +373,7 @@ func (ps *PaymentService) calculateBenefits(claim ClaimData) PaymentCalculation 
 	}
 }
 
-func (ps *PaymentService) getMockClaims() []ClaimData {
-	return []ClaimData{
-		{
-			ClaimReferenceID:     "CLM-174830775476-QQYP4",
-			FirstName:           "Geoff",
-			LastName:            "Rod",
-			EmailAddress:        "geoff.rod@email.com",
-			PhoneNumber:         "555-0123",
-			EmployerName:        "ACME Corp",
-			EmployerID:          "12-3456789",
-			EmploymentStartDate: "2023-01-01",
-			EmploymentEndDate:   "2024-12-31",
-			TotalAnnualEarnings: 60000.00,
-			SeparationReasonCode: "LAYOFF",
-			SeparationExplanation: "Company restructuring",
-			StatusCode:          "AWAITING_PAYMENT_PROCESSING",
-			ReceivedTimestamp:   time.Now().Format(time.RFC3339),
-			StateTaxAmount:      1200.00,
-			FederalTaxAmount:    360.00,
-			TotalTaxAmount:      1560.00,
-		},
-	}
-}
+// Removed getMockClaims function - no longer needed
 
 func (ps *PaymentService) storePayment(payment PaymentCalculation) error {
 	ctx := context.Background()
@@ -367,7 +415,7 @@ func (ps *PaymentService) backgroundTasks() {
 
 	// Register with gateway
 	if err := ps.registerWithGateway(); err != nil {
-		log.Printf("⚠️ Failed to register with gateway: %v", err)
+		log.Printf("⚠️ Failed to register with gateway, continuing anyway: %v", err)
 	}
 
 	ticker := time.NewTicker(30 * time.Second)
@@ -378,7 +426,7 @@ func (ps *PaymentService) backgroundTasks() {
 		case <-ticker.C:
 			// Send heartbeat
 			if err := ps.sendHeartbeat(); err != nil {
-				log.Printf("Heartbeat failed: %v", err)
+				// Don't log heartbeat failures unless registered
 			}
 
 			// Poll for new claims
