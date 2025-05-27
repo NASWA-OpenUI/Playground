@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}NASWA | Tax Services - Manage Rates{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>Manage Tax Rates</h2>
+        <p>Update state and federal unemployment insurance tax rates</p>
+    </div>
+
+    {% if current_rates %}
+    <div class="form-section">
+        <h3>Current Tax Rates</h3>
+        <div class="status-overview">
+            <div class="status-card">
+                <div class="status-label">State Tax Rate</div>
+                <div class="status-value">{{ "%.2f"|format(current_rates.state_tax_rate * 100) }}%</div>
+                <div class="status-subtext">Current Rate</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Federal Tax Rate</div>
+                <div class="status-value">{{ "%.2f"|format(current_rates.federal_tax_rate * 100) }}%</div>
+                <div class="status-subtext">Current Rate</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Last Updated</div>
+                <div class="status-value">{{ current_rates.updated_at.strftime('%m/%d') }}</div>
+                <div class="status-subtext">{{ current_rates.updated_at.strftime('%Y') }}</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Updated By</div>
+                <div class="status-value">{{ current_rates.updated_by|title }}</div>
+                <div class="status-subtext">User</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="POST" class="form-section">
+        <h3>Update Tax Rates</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="state_rate">State Tax Rate (%) *</label>
+                <input type="number" 
+                       id="state_rate" 
+                       name="state_rate" 
+                       step="0.01" 
+                       min="0" 
+                       max="100" 
+                       value="{{ current_rates.state_tax_rate * 100 if current_rates else 2.00 }}"
+                       placeholder="2.00"
+                       required>
+            </div>
+            <div class="form-group">
+                <label for="federal_rate">Federal Tax Rate (%) *</label>
+                <input type="number" 
+                       id="federal_rate" 
+                       name="federal_rate" 
+                       step="0.01" 
+                       min="0" 
+                       max="100" 
+                       value="{{ current_rates.federal_tax_rate * 100 if current_rates else 0.60 }}"
+                       placeholder="0.60"
+                       required>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn">Update Tax Rates</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Add some client-side validation and user feedback
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const stateRateInput = document.getElementById('state_rate');
+    const federalRateInput = document.getElementById('federal_rate');
+    
+    // Format input values on blur
+    [stateRateInput, federalRateInput].forEach(input => {
+        input.addEventListener('blur', function() {
+            const value = parseFloat(this.value);
+            if (!isNaN(value)) {
+                this.value = value.toFixed(2);
+            }
+        });
+        
+        // Validate reasonable ranges
+        input.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value > 20) {
+                this.style.borderColor = '#f39c12';
+                this.title = 'This seems like a high rate. Please verify.';
+            } else {
+                this.style.borderColor = '';
+                this.title = '';
+            }
+        });
+    });
+    
+    form.addEventListener('submit', function(e) {
+        const stateRate = parseFloat(stateRateInput.value);
+        const federalRate = parseFloat(federalRateInput.value);
+        
+        // Basic validation
+        if (stateRate < 0 || federalRate < 0) {
+            e.preventDefault();
+            alert('Tax rates cannot be negative.');
+            return;
+        }
+        
+        if (stateRate > 20 || federalRate > 20) {
+            if (!confirm('These rates seem unusually high. Are you sure you want to continue?')) {
+                e.preventDefault();
+                return;
+            }
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Updating...';
+    });
+});
+</script>
+
+{% endblock %}
