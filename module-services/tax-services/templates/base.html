@@ -370,13 +370,11 @@
     <header>
         <div class="header-container">
             <div class="logo">
-                <div class="logo">
-                    <img src="/static/naswa_logo.png" alt="NASWA Logo" class="logo-icon">
-                    <div>
-                        <h1>{% block header_title %}NASWA Tax Services{% endblock %}</h1>
-                        <p>{% block header_subtitle %}Unemployment Insurance Tax Administration{% endblock %}</p>
-                    </div>
-        </div>
+                <div>
+                    <h1>{% block header_title %}NASWA Tax Services{% endblock %}</h1>
+                    <p>{% block header_subtitle %}Unemployment Insurance Tax Administration{% endblock %}</p>
+                </div>
+            </div>
             <nav>
                 <ul>
                     <li><a href="/" class="{% if request.endpoint == 'index' %}active{% endif %}">Dashboard</a></li>
