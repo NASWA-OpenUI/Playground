@@ -479,6 +479,13 @@
             color: #666;
         }
 
+        /* Polling status animation */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         /* Footer - matching camel-gateway */
         .footer {
             background: var(--primary-color);
@@ -797,6 +804,8 @@
 
         // Global variables
         let currentClaim = null;
+        let statusPollingInterval = null;
+        let pollingActive = false;
 
         // DOM Elements
         const claimForm = document.getElementById('claimForm');
@@ -949,10 +958,13 @@
                 
                 if (result.success) {
                     currentClaim = result.claim;
-                    showNotification('Claim submitted successfully!', 'success');
+                    showNotification('Claim submitted successfully! Monitoring status...', 'success');
                     
                     // Show claim status
                     displayClaimStatus(result.claim);
+                    
+                    // Start polling for status updates
+                    startStatusPolling(result.claim.claimId);
                     
                     // Scroll to status section
                     document.getElementById('claim-status').scrollIntoView({
@@ -1133,6 +1145,11 @@
                 if (result.data.getClaim) {
                     currentClaim = result.data.getClaim;
                     displayClaimStatus(result.data.getClaim);
+                    
+                    // If this was called from URL params, start polling
+                    if (claimId && !pollingActive) {
+                        startStatusPolling(claimId);
+                    }
                 } else {
                     showNotification('Claim not found.', 'error');
                 }
@@ -1142,7 +1159,146 @@
             }
         }
 
-        // Display claim status
+        // Start status polling
+        function startStatusPolling(claimId) {
+            // Don't start if already polling
+            if (pollingActive) {
+                return;
+            }
+            
+            pollingActive = true;
+            console.log(`Starting status polling for claim ${claimId}`);
+            
+            // Update UI to show polling is active
+            updatePollingStatus(true);
+            
+            // Poll every 15 seconds
+            statusPollingInterval = setInterval(async () => {
+                try {
+                    const query = `
+                        query GetClaim($claimId: String!) {
+                            getClaim(claimId: $claimId) {
+                                id
+                                claimId
+                                firstName
+                                lastName
+                                status
+                                statusDisplayName
+                                submissionTimestamp
+                                lastUpdated
+                                weeklyBenefitAmount
+                                maximumBenefitAmount
+                                statusHistory {
+                                    status
+                                    timestamp
+                                    notes
+                                }
+                            }
+                        }
+                    `;
+                    
+                    const response = await fetch(GRAPHQL_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query,
+                            variables: { claimId }
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.data && result.data.getClaim) {
+                        const updatedClaim = result.data.getClaim;
+                        
+                        // Check if status has changed
+                        if (!currentClaim || currentClaim.status !== updatedClaim.status) {
+                            console.log(`Status changed from ${currentClaim?.status || 'unknown'} to ${updatedClaim.status}`);
+                            showNotification(`Claim status updated: ${updatedClaim.statusDisplayName}`, 'success');
+                        }
+                        
+                        currentClaim = updatedClaim;
+                        displayClaimStatus(updatedClaim);
+                        updatePollingStatus(true);
+                        
+                        // Stop polling if claim reaches terminal status
+                        if (isTerminalStatus(updatedClaim.status)) {
+                            stopStatusPolling();
+                            showNotification(`Claim processing complete: ${updatedClaim.statusDisplayName}`, 'success');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error during status polling:', error);
+                    // Continue polling despite errors, but update status
+                    updatePollingStatus(true, 'Error checking status');
+                }
+            }, 15000);
+            
+            // Stop polling after 10 minutes to prevent indefinite polling
+            setTimeout(() => {
+                if (pollingActive) {
+                    stopStatusPolling();
+                    showNotification('Status monitoring stopped after 10 minutes', 'warning');
+                }
+            }, 600000);
+        }
+        
+        // Stop status polling
+        function stopStatusPolling() {
+            if (statusPollingInterval) {
+                clearInterval(statusPollingInterval);
+                statusPollingInterval = null;
+            }
+            pollingActive = false;
+            updatePollingStatus(false);
+            console.log('Status polling stopped');
+        }
+        
+        // Check if status is terminal (no more updates expected)
+        function isTerminalStatus(status) {
+            const terminalStatuses = ['APPROVED', 'DENIED', 'CLOSED', 'CANCELLED'];
+            return terminalStatuses.includes(status.toUpperCase());
+        }
+        
+        // Update polling status in UI
+        function updatePollingStatus(isActive, errorMessage = null) {
+            let pollingStatus = document.getElementById('polling-status');
+            if (!pollingStatus) {
+                // Create polling status element if it doesn't exist
+                pollingStatus = document.createElement('div');
+                pollingStatus.id = 'polling-status';
+                pollingStatus.style.cssText = `
+                    text-align: center;
+                    padding: 0.5rem;
+                    margin: 1rem 0;
+                    border-radius: 4px;
+                    font-size: 0.9rem;
+                    transition: all 0.3s ease;
+                `;
+                
+                const statusContainer = document.querySelector('.status-container');
+                if (statusContainer) {
+                    statusContainer.insertBefore(pollingStatus, statusContainer.firstChild);
+                }
+            }
+            
+            if (isActive) {
+                pollingStatus.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <div style="width: 8px; height: 8px; background: #28a745; border-radius: 50%; animation: pulse 2s infinite;"></div>
+                        <span style="color: #28a745; font-weight: 500;">
+                            ${errorMessage || `Monitoring claim status... Last checked: ${new Date().toLocaleTimeString()}`}
+                        </span>
+                    </div>
+                `;
+                pollingStatus.style.background = '#d4edda';
+                pollingStatus.style.border = '1px solid #c3e6cb';
+            } else {
+                pollingStatus.style.display = 'none';
+            }
+        }
         function displayClaimStatus(claim) {
             statusContainer.style.display = 'block';
             
@@ -1211,6 +1367,11 @@
         function hideNotification() {
             notification.style.display = 'none';
         }
+        
+        // Cleanup polling when page unloads
+        window.addEventListener('beforeunload', function() {
+            stopStatusPolling();
+        });
     </script>
 </body>
 </html>
