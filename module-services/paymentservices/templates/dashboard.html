@@ -147,7 +147,7 @@
             margin-bottom: 20px;
             opacity: 0.3;
         }
-        .grpc-status {
+        .http-status {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -158,7 +158,7 @@
             font-size: 0.9em;
             font-weight: 500;
         }
-        .grpc-status.disconnected {
+        .http-status.disconnected {
             background: #f8d7da;
             color: #721c24;
         }
@@ -177,10 +177,10 @@
     <div class="container">
         <div class="header">
             <h1>💰 Payment Services</h1>
-            <p>gRPC-enabled unemployment benefit payment processing system</p>
-            <div class="grpc-status">
+            <p>Go + HTTP unemployment benefit payment processing system</p>
+            <div class="http-status">
                 <div class="status-dot"></div>
-                gRPC Server Active
+                HTTP Server Active
             </div>
         </div>
 
@@ -199,7 +199,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-value">🚀</div>
-                <div class="stat-label">gRPC Ready</div>
+                <div class="stat-label">HTTP Ready</div>
             </div>
         </div>
 
@@ -257,7 +257,7 @@
                     <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
                 </svg>
                 <h3>No payments to display</h3>
-                <p>Payment calculations will appear here when claims are processed via gRPC</p>
+                <p>Payment calculations will appear here when claims are processed via HTTP</p>
             </div>
             {{end}}
         </div>
