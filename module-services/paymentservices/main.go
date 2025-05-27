@@ -1,38 +1,32 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
-	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	pb "paymentservices/proto" // Import the generated protobuf package
 )
 
 type PaymentService struct {
-	pb.UnimplementedPaymentServiceServer // Embed the unimplemented server
-	redisClient       *redis.Client
-	gatewayURL        string
-	gatewayGrpcURL    string
-	serviceName       string
-	servicePort       string
-	grpcPort          string
-	isRegistered      bool
-	grpcConn          *grpc.ClientConn
-	grpcClient        pb.PaymentServiceClient
-	maxWeeklyBenefit  float64
-	replacementRate   float64
-	benefitWeeks      int
+	redisClient      *redis.Client
+	gatewayURL       string
+	serviceName      string
+	servicePort      string
+	isRegistered     bool
+	httpClient       *http.Client
+	maxWeeklyBenefit float64
+	replacementRate  float64
+	benefitWeeks     int
 }
 
 type ClaimData struct {
@@ -69,12 +63,42 @@ type PaymentCalculation struct {
 	Status               string    `json:"status"`
 }
 
+// HTTP Request/Response types
+type ServiceRegistrationRequest struct {
+	ServiceID      string `json:"serviceId"`
+	Name          string `json:"name"`
+	Technology    string `json:"technology"`
+	Protocol      string `json:"protocol"`
+	Endpoint      string `json:"endpoint"`
+	HealthEndpoint string `json:"healthEndpoint"`
+}
+
+type HeartbeatRequest struct {
+	ServiceID string `json:"serviceId"`
+	Timestamp string `json:"timestamp"`
+	Status    string `json:"status"`
+}
+
+type PaymentUpdateRequest struct {
+	ClaimID             string  `json:"claimId"`
+	Status              string  `json:"status"`
+	WeeklyBenefitAmount float64 `json:"weeklyBenefitAmount"`
+	MaximumBenefit      float64 `json:"maximumBenefit"`
+	FirstPaymentAmount  float64 `json:"firstPaymentAmount"`
+	UpdatedBy           string  `json:"updatedBy"`
+	Notes               string  `json:"notes"`
+}
+
+type HTTPResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Claims  []ClaimData `json:"claims,omitempty"`
+}
+
 func NewPaymentService() *PaymentService {
 	gatewayURL := getEnv("CAMEL_GATEWAY_URL", "http://camel-gateway:8080")
-	gatewayGrpcURL := getEnv("CAMEL_GATEWAY_GRPC_URL", "camel-gateway:9090")
 	serviceName := getEnv("SERVICE_NAME", "paymentservices")
 	servicePort := getEnv("PORT", "6000")
-	grpcPort := getEnv("GRPC_PORT", "9000")
 	
 	// Configuration for benefit calculations
 	maxWeeklyBenefit, _ := strconv.ParseFloat(getEnv("MAX_WEEKLY_BENEFIT", "600.00"), 64)
@@ -88,203 +112,157 @@ func NewPaymentService() *PaymentService {
 		DB:       0,
 	})
 
+	// HTTP client with timeout
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
 	return &PaymentService{
 		redisClient:      redisClient,
 		gatewayURL:      gatewayURL,
-		gatewayGrpcURL:  gatewayGrpcURL,
 		serviceName:     serviceName,
 		servicePort:     servicePort,
-		grpcPort:        grpcPort,
+		httpClient:      httpClient,
 		maxWeeklyBenefit: maxWeeklyBenefit,
 		replacementRate:  replacementRate,
 		benefitWeeks:     benefitWeeks,
 	}
 }
 
-// gRPC Server Implementation
-func (ps *PaymentService) RegisterService(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	log.Printf("📋 gRPC Server: RegisterService called for %s", req.ServiceId)
+func (ps *PaymentService) makeHTTPRequest(method, endpoint string, payload interface{}) (*HTTPResponse, error) {
+	url := ps.gatewayURL + endpoint
 	
-	// In a real implementation, you might store this registration info
-	// For now, we'll just acknowledge it
-	return &pb.RegisterResponse{
-		Success: true,
-		Message: fmt.Sprintf("Service %s registered successfully", req.ServiceId),
-	}, nil
-}
-
-func (ps *PaymentService) SendHeartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*pb.HeartbeatResponse, error) {
-	log.Printf("💓 gRPC Server: Heartbeat received from %s", req.ServiceId)
-	
-	return &pb.HeartbeatResponse{
-		Success: true,
-		Message: "Heartbeat acknowledged",
-	}, nil
-}
-
-func (ps *PaymentService) GetClaimsByStatus(ctx context.Context, req *pb.StatusRequest) (*pb.ClaimsResponse, error) {
-	log.Printf("📋 gRPC Server: GetClaimsByStatus called for status: %s", req.Status)
-	
-	// Get stored payments from Redis and convert to claims format
-	payments, err := ps.getStoredPayments()
-	if err != nil {
-		log.Printf("Error getting stored payments: %v", err)
-		// Return mock data if Redis fails
-		mockClaims := ps.getMockClaims()
-		pbClaims := ps.convertClaimsToPb(mockClaims)
-		return &pb.ClaimsResponse{
-			Claims:  pbClaims,
-			Success: true,
-			Message: "Mock claims returned due to storage error",
-		}, nil
-	}
-	
-	// Filter payments by status and convert to claims
-	var filteredClaims []*pb.Claim
-	for _, payment := range payments {
-		if payment.Status == req.Status || req.Status == "" {
-			// Convert payment back to claim format for response
-			claim := &pb.Claim{
-				ClaimReferenceId:      payment.ClaimID,
-				FirstName:            "", // These would need to be stored if needed
-				LastName:             "",
-				EmailAddress:         "",
-				PhoneNumber:          "",
-				EmployerName:         "",
-				EmployerId:           "",
-				EmploymentStartDate:  "",
-				EmploymentEndDate:    "",
-				TotalAnnualEarnings:  payment.AnnualWages,
-				SeparationReasonCode: "",
-				SeparationExplanation: "",
-				StatusCode:           payment.Status,
-				ReceivedTimestamp:    payment.ProcessedAt.Format(time.RFC3339),
-				StateTaxAmount:       0,
-				FederalTaxAmount:     0,
-				TotalTaxAmount:       payment.WeeklyTaxWithholding * 52, // Approximate
-			}
-			filteredClaims = append(filteredClaims, claim)
+	var body io.Reader
+	if payload != nil {
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal payload: %v", err)
 		}
+		body = bytes.NewBuffer(jsonData)
 	}
-	
-	return &pb.ClaimsResponse{
-		Claims:  filteredClaims,
-		Success: true,
-		Message: fmt.Sprintf("Found %d claims with status %s", len(filteredClaims), req.Status),
-	}, nil
-}
 
-func (ps *PaymentService) UpdateClaimPayment(ctx context.Context, req *pb.PaymentUpdateRequest) (*pb.PaymentUpdateResponse, error) {
-	log.Printf("💰 gRPC Server: UpdateClaimPayment called for claim %s", req.ClaimId)
-	
-	// Update the payment in Redis
-	ctxRedis := context.Background()
-	paymentJSON, err := ps.redisClient.Get(ctxRedis, fmt.Sprintf("payment:%s", req.ClaimId)).Result()
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return &pb.PaymentUpdateResponse{
-			Success: false,
-			Message: fmt.Sprintf("Payment not found for claim %s", req.ClaimId),
-		}, nil
+		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
-	
-	var payment PaymentCalculation
-	if err := json.Unmarshal([]byte(paymentJSON), &payment); err != nil {
-		return &pb.PaymentUpdateResponse{
-			Success: false,
-			Message: "Failed to parse payment data",
-		}, nil
-	}
-	
-	// Update the payment with new info
-	payment.Status = req.Status
-	payment.WeeklyBenefitAmount = req.WeeklyBenefitAmount
-	payment.MaximumBenefit = req.MaximumBenefit
-	payment.FirstPaymentAmount = req.FirstPaymentAmount
-	payment.ProcessedAt = time.Now()
-	
-	// Store updated payment
-	if err := ps.storePayment(payment); err != nil {
-		return &pb.PaymentUpdateResponse{
-			Success: false,
-			Message: "Failed to update payment",
-		}, nil
-	}
-	
-	log.Printf("✅ Payment updated successfully for claim %s", req.ClaimId)
-	
-	return &pb.PaymentUpdateResponse{
-		Success: true,
-		Message: fmt.Sprintf("Payment updated successfully for claim %s", req.ClaimId),
-	}, nil
-}
 
-// Helper function to convert claims to protobuf format
-func (ps *PaymentService) convertClaimsToPb(claims []ClaimData) []*pb.Claim {
-	var pbClaims []*pb.Claim
-	for _, claim := range claims {
-		pbClaim := &pb.Claim{
-			ClaimReferenceId:      claim.ClaimReferenceID,
-			FirstName:            claim.FirstName,
-			LastName:             claim.LastName,
-			EmailAddress:         claim.EmailAddress,
-			PhoneNumber:          claim.PhoneNumber,
-			EmployerName:         claim.EmployerName,
-			EmployerId:           claim.EmployerID,
-			EmploymentStartDate:  claim.EmploymentStartDate,
-			EmploymentEndDate:    claim.EmploymentEndDate,
-			TotalAnnualEarnings:  claim.TotalAnnualEarnings,
-			SeparationReasonCode: claim.SeparationReasonCode,
-			SeparationExplanation: claim.SeparationExplanation,
-			StatusCode:           claim.StatusCode,
-			ReceivedTimestamp:    claim.ReceivedTimestamp,
-			StateTaxAmount:       claim.StateTaxAmount,
-			FederalTaxAmount:     claim.FederalTaxAmount,
-			TotalTaxAmount:       claim.TotalTaxAmount,
-		}
-		pbClaims = append(pbClaims, pbClaim)
+	if payload != nil {
+		req.Header.Set("Content-Type", "application/json")
 	}
-	return pbClaims
-}
 
-func (ps *PaymentService) initGrpcConnection() error {
-	log.Printf("Connecting to Camel Gateway gRPC at %s", ps.gatewayGrpcURL)
-	
-	// Create gRPC connection with insecure credentials for internal service communication
-	conn, err := grpc.Dial(ps.gatewayGrpcURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	resp, err := ps.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to connect to gRPC server: %v", err)
+		return nil, fmt.Errorf("HTTP request failed: %v", err)
 	}
-	
-	ps.grpcConn = conn
-	ps.grpcClient = pb.NewPaymentServiceClient(conn)
-	
-	log.Println("✅ gRPC connection established")
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %v", err)
+	}
+
+	var httpResp HTTPResponse
+	if err := json.Unmarshal(respBody, &httpResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	return &httpResp, nil
+}
+
+func (ps *PaymentService) registerWithGateway() error {
+	request := ServiceRegistrationRequest{
+		ServiceID:      ps.serviceName,
+		Name:          "Payment Services",
+		Technology:    "Go + HTTP",
+		Protocol:      "HTTP",
+		Endpoint:      fmt.Sprintf("http://%s:%s", ps.serviceName, ps.servicePort),
+		HealthEndpoint: fmt.Sprintf("http://%s:%s/health", ps.serviceName, ps.servicePort),
+	}
+
+	log.Printf("🔄 Registering with Camel Gateway via HTTP...")
+	response, err := ps.makeHTTPRequest("POST", "/api/payment/register", request)
+	if err != nil {
+		return fmt.Errorf("registration failed: %v", err)
+	}
+
+	if response.Success {
+		ps.isRegistered = true
+		log.Printf("✅ Successfully registered with gateway: %s", response.Message)
+	} else {
+		return fmt.Errorf("registration rejected: %s", response.Message)
+	}
+
 	return nil
 }
 
-func (ps *PaymentService) closeGrpcConnection() {
-	if ps.grpcConn != nil {
-		ps.grpcConn.Close()
+func (ps *PaymentService) sendHeartbeat() error {
+	if !ps.isRegistered {
+		return fmt.Errorf("service not registered")
 	}
+
+	request := HeartbeatRequest{
+		ServiceID: ps.serviceName,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Status:    "UP",
+	}
+
+	response, err := ps.makeHTTPRequest("POST", "/api/payment/heartbeat", request)
+	if err != nil {
+		return fmt.Errorf("heartbeat failed: %v", err)
+	}
+
+	if response.Success {
+		log.Printf("💓 Heartbeat sent successfully: %s", response.Message)
+	} else {
+		log.Printf("⚠️ Heartbeat warning: %s", response.Message)
+	}
+
+	return nil
 }
 
-func (ps *PaymentService) startGrpcServer() error {
-	lis, err := net.Listen("tcp", ":"+ps.grpcPort)
+func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
+	response, err := ps.makeHTTPRequest("GET", "/api/payment/claims?status=AWAITING_PAYMENT_PROCESSING", nil)
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %v", ps.grpcPort, err)
+		log.Printf("⚠️ HTTP call failed, using mock data: %v", err)
+		return ps.getMockClaims(), nil
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterPaymentServiceServer(s, ps)
+	if !response.Success {
+		log.Printf("⚠️ Claims query unsuccessful: %s", response.Message)
+		return ps.getMockClaims(), nil
+	}
 
-	log.Printf("🚀 gRPC server starting on port %s", ps.grpcPort)
+	log.Printf("📋 Found %d claims awaiting payment processing via HTTP", len(response.Claims))
+	return response.Claims, nil
+}
+
+func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
+	request := PaymentUpdateRequest{
+		ClaimID:             payment.ClaimID,
+		Status:              "PAID",
+		WeeklyBenefitAmount: payment.WeeklyBenefitAmount,
+		MaximumBenefit:      payment.MaximumBenefit,
+		FirstPaymentAmount:  payment.FirstPaymentAmount,
+		UpdatedBy:           "paymentservices",
+		Notes:               fmt.Sprintf("Payment processed via HTTP. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f", 
+			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
+	}
+
+	log.Printf("🔄 Sending payment update to Camel Gateway via HTTP...")
+	response, err := ps.makeHTTPRequest("POST", "/api/payment/update", request)
+	if err != nil {
+		return fmt.Errorf("payment update failed: %v", err)
+	}
+
+	if response.Success {
+		log.Printf("✅ Payment update successful: %s", response.Message)
+	} else {
+		log.Printf("⚠️ Payment update warning: %s", response.Message)
+	}
+
+	log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
+		payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
 	
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve gRPC: %v", err)
-		}
-	}()
-
 	return nil
 }
 
@@ -318,120 +296,6 @@ func (ps *PaymentService) calculateBenefits(claim ClaimData) PaymentCalculation 
 	}
 }
 
-func (ps *PaymentService) registerWithGateway() error {
-	if ps.grpcClient == nil {
-		return fmt.Errorf("gRPC client not initialized")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	request := &pb.RegisterRequest{
-		ServiceId:      ps.serviceName,
-		Name:          "Payment Services",
-		Technology:    "Go + gRPC",
-		Protocol:      "gRPC",
-		Endpoint:      fmt.Sprintf("%s:%s", ps.serviceName, ps.grpcPort), // Use gRPC port
-		HealthEndpoint: fmt.Sprintf("http://%s:%s/health", ps.serviceName, ps.servicePort), // HTTP health check
-	}
-
-	log.Printf("🔄 Registering with Camel Gateway via gRPC...")
-	response, err := ps.grpcClient.RegisterService(ctx, request)
-	if err != nil {
-		return fmt.Errorf("registration failed: %v", err)
-	}
-
-	if response.Success {
-		ps.isRegistered = true
-		log.Printf("✅ Successfully registered with gateway: %s", response.Message)
-	} else {
-		return fmt.Errorf("registration rejected: %s", response.Message)
-	}
-
-	return nil
-}
-
-func (ps *PaymentService) sendHeartbeat() error {
-	if !ps.isRegistered || ps.grpcClient == nil {
-		return fmt.Errorf("service not registered or gRPC client not available")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	request := &pb.HeartbeatRequest{
-		ServiceId: ps.serviceName,
-		Timestamp: time.Now().Format(time.RFC3339),
-		Status:    "UP",
-	}
-
-	response, err := ps.grpcClient.SendHeartbeat(ctx, request)
-	if err != nil {
-		return fmt.Errorf("heartbeat failed: %v", err)
-	}
-
-	if response.Success {
-		log.Printf("💓 Heartbeat sent successfully: %s", response.Message)
-	} else {
-		log.Printf("⚠️ Heartbeat warning: %s", response.Message)
-	}
-
-	return nil
-}
-
-func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
-	if ps.grpcClient == nil {
-		// Fallback to mock data if gRPC not available
-		return ps.getMockClaims(), nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	request := &pb.StatusRequest{
-		Status: "AWAITING_PAYMENT_PROCESSING",
-	}
-
-	response, err := ps.grpcClient.GetClaimsByStatus(ctx, request)
-	if err != nil {
-		log.Printf("⚠️ gRPC call failed, using mock data: %v", err)
-		return ps.getMockClaims(), nil
-	}
-
-	if !response.Success {
-		log.Printf("⚠️ Claims query unsuccessful: %s", response.Message)
-		return ps.getMockClaims(), nil
-	}
-
-	// Convert protobuf claims to our internal structure
-	var claims []ClaimData
-	for _, pbClaim := range response.Claims {
-		claim := ClaimData{
-			ClaimReferenceID:      pbClaim.ClaimReferenceId,
-			FirstName:            pbClaim.FirstName,
-			LastName:             pbClaim.LastName,
-			EmailAddress:         pbClaim.EmailAddress,
-			PhoneNumber:          pbClaim.PhoneNumber,
-			EmployerName:         pbClaim.EmployerName,
-			EmployerID:           pbClaim.EmployerId,
-			EmploymentStartDate:  pbClaim.EmploymentStartDate,
-			EmploymentEndDate:    pbClaim.EmploymentEndDate,
-			TotalAnnualEarnings:  pbClaim.TotalAnnualEarnings,
-			SeparationReasonCode: pbClaim.SeparationReasonCode,
-			SeparationExplanation: pbClaim.SeparationExplanation,
-			StatusCode:           pbClaim.StatusCode,
-			ReceivedTimestamp:    pbClaim.ReceivedTimestamp,
-			StateTaxAmount:       pbClaim.StateTaxAmount,
-			FederalTaxAmount:     pbClaim.FederalTaxAmount,
-			TotalTaxAmount:       pbClaim.TotalTaxAmount,
-		}
-		claims = append(claims, claim)
-	}
-
-	log.Printf("📋 Found %d claims awaiting payment processing via gRPC", len(claims))
-	return claims, nil
-}
-
 func (ps *PaymentService) getMockClaims() []ClaimData {
 	return []ClaimData{
 		{
@@ -454,64 +318,6 @@ func (ps *PaymentService) getMockClaims() []ClaimData {
 			TotalTaxAmount:      1950.00,
 		},
 	}
-}
-
-func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
-	if ps.grpcClient == nil {
-		log.Printf("⚠️ gRPC client not available, would send payment update:")
-		ps.logPaymentUpdate(payment)
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	request := &pb.PaymentUpdateRequest{
-		ClaimId:             payment.ClaimID,
-		Status:              "PAID",
-		WeeklyBenefitAmount: payment.WeeklyBenefitAmount,
-		MaximumBenefit:      payment.MaximumBenefit,
-		FirstPaymentAmount:  payment.FirstPaymentAmount,
-		UpdatedBy:           "paymentservices",
-		Notes: fmt.Sprintf("Payment processed. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f", 
-			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
-	}
-
-	log.Printf("🔄 Sending payment update to Camel Gateway via gRPC...")
-	response, err := ps.grpcClient.UpdateClaimPayment(ctx, request)
-	if err != nil {
-		return fmt.Errorf("payment update failed: %v", err)
-	}
-
-	if response.Success {
-		log.Printf("✅ Payment update successful: %s", response.Message)
-	} else {
-		log.Printf("⚠️ Payment update warning: %s", response.Message)
-	}
-
-	log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
-		payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
-	
-	return nil
-}
-
-func (ps *PaymentService) logPaymentUpdate(payment PaymentCalculation) {
-	paymentUpdate := map[string]interface{}{
-		"claimId":             payment.ClaimID,
-		"statusCode":          "PAID",
-		"statusDisplayName":   "Payment Processed", 
-		"weeklyBenefitAmount": payment.WeeklyBenefitAmount,
-		"maximumBenefit":      payment.MaximumBenefit,
-		"firstPaymentAmount":  payment.FirstPaymentAmount,
-		"updatedBy":           "paymentservices",
-		"notes": fmt.Sprintf("Payment processed. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f", 
-			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
-	}
-
-	paymentJSON, _ := json.Marshal(paymentUpdate)
-	log.Printf("   Endpoint: %s", ps.gatewayGrpcURL)
-	log.Printf("   Method: UpdateClaimPayment") 
-	log.Printf("   Payload: %s", string(paymentJSON))
 }
 
 func (ps *PaymentService) storePayment(payment PaymentCalculation) error {
@@ -551,12 +357,6 @@ func (ps *PaymentService) getStoredPayments() ([]PaymentCalculation, error) {
 
 func (ps *PaymentService) backgroundTasks() {
 	time.Sleep(5 * time.Second) // Wait for app to start
-
-	// Initialize gRPC connection
-	if err := ps.initGrpcConnection(); err != nil {
-		log.Printf("⚠️ Failed to initialize gRPC connection: %v", err)
-		log.Println("Will continue with limited functionality...")
-	}
 
 	// Register with gateway
 	if err := ps.registerWithGateway(); err != nil {
@@ -615,9 +415,8 @@ func setupRoutes(ps *PaymentService) *gin.Engine {
 			"status":    "UP",
 			"service":   "paymentservices",
 			"timestamp": time.Now().Format(time.RFC3339),
-			"grpc":      ps.grpcClient != nil,
+			"protocol":  "HTTP",
 			"httpPort":  ps.servicePort,
-			"grpcPort":  ps.grpcPort,
 		})
 	})
 
@@ -698,9 +497,6 @@ func main() {
 
 	ps := NewPaymentService()
 
-	// Ensure gRPC connection is closed on exit
-	defer ps.closeGrpcConnection()
-
 	// Test Redis connection
 	ctx := context.Background()
 	if err := ps.redisClient.Ping(ctx).Err(); err != nil {
@@ -710,23 +506,17 @@ func main() {
 		log.Println("✅ Redis connected successfully")
 	}
 
-	// Start gRPC server
-	if err := ps.startGrpcServer(); err != nil {
-		log.Printf("⚠️ Failed to start gRPC server: %v", err)
-	}
-
 	// Start background tasks
 	go ps.backgroundTasks()
 
-	// Setup web server (for dashboard and health checks)
+	// Setup web server
 	r := setupRoutes(ps)
 
-	httpPort := ps.servicePort
-	log.Printf("🌐 HTTP server running on port %s", httpPort)
-	log.Printf("🚀 gRPC server running on port %s", ps.grpcPort)
-	log.Printf("📊 Dashboard: http://localhost:%s", httpPort)
+	port := ps.servicePort
+	log.Printf("🌐 HTTP server running on port %s", port)
+	log.Printf("📊 Dashboard: http://localhost:%s", port)
 
-	if err := r.Run(":" + httpPort); err != nil {
-		log.Fatalf("Failed to start HTTP server: %v", err)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }
