@@ -3,29 +3,616 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UI Modernization - Claimant Services</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>NASWA | Claimant Services</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --light-color: #ecf0f1;
+            --text-color: #333;
+            --background-color: #f8f9fa;
+            --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-top: 140px;
+        }
+
+        /* Header with sophisticated metallic gradient - matching camel-gateway */
+        header {
+            background: linear-gradient(135deg, #F0F0F0, #E0E0E0, #D8D8D8);
+            color: #2c3e50;
+            padding: 2rem 0;
+            box-shadow: var(--card-shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            height: 80px;
+            width: auto;
+            margin-right: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .logo p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin: 0;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: rgba(44, 62, 80, 0.1);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Hero Section with gradient */
+        .hero {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Notification Styles - matching camel-gateway */
+        .notification {
+            margin: 2rem auto;
+            max-width: 1200px;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--card-shadow);
+        }
+
+        .notification.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .notification.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .notification.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: inherit;
+        }
+
+        /* Form Sections - card-based like camel-gateway */
+        .claim-form-section, .status-section {
+            margin-bottom: 3rem;
+        }
+
+        .form-container, .status-container {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-container:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .form-header, .status-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .form-header h2, .status-header h2 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p, .status-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        /* Form sections with card styling */
+        .form-section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--secondary-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-section:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .form-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .form-group input.error,
+        .form-group select.error {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+
+        /* Button styles - matching camel-gateway */
+        .btn, .button {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover, .button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled, .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-btn {
+            min-width: 200px;
+            font-size: 1.1rem;
+            padding: 1rem 2rem;
+        }
+
+        .form-actions {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #f1f3f4;
+        }
+
+        /* Status section styling */
+        .claim-details {
+            background-color: var(--background-color);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+        }
+
+        .claim-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .claim-info {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--secondary-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .claim-info:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .claim-info h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .claim-info p {
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .claim-info p:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .claim-info strong {
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Status badges - matching camel-gateway */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .status-badge.submitted, .status-badge.received {
+            background: #cce7ff;
+            color: #0056b3;
+        }
+
+        .status-badge.processing, .status-badge.awaiting-employer, .status-badge.awaiting-tax-calc {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.denied {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Status timeline */
+        .status-timeline {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .status-timeline h4 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .timeline-date {
+            min-width: 150px;
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-status {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-notes {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Loading states */
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .loading-state h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .loading-state p {
+            color: #666;
+        }
+
+        /* Footer - matching camel-gateway */
+        .footer {
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            opacity: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 120px;
+            }
+
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero-container, .container {
+                padding: 1rem;
+            }
+
+            .form-container, .status-container {
+                padding: 1.5rem;
+            }
+
+            .form-section {
+                padding: 1.5rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .claim-summary {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .timeline-item {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .timeline-date {
+                min-width: auto;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <img src="naswa_logo.png" alt="NASWA Logo" class="logo-icon">
+                <div>
+                    <h1>NASWA Claimant Services</h1>
+                    <p>Unemployment Insurance Claims Processing</p>
+                </div>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#submit-claim">Submit Claim</a></li>
+                    <li><a href="#claim-status">Check Status</a></li>
+                    <li><a href="/health">Service Health</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-container">
+            <h1>Unemployment Insurance Claims</h1>
+            <p>Submit your unemployment insurance claim quickly and securely through our modernized platform.</p>
+        </div>
+    </section>
+
+    <!-- Notification Area -->
+    <div id="notification" class="notification" style="display: none;">
+        <div class="notification-content">
+            <span id="notification-message"></span>
+            <button id="notification-close" class="notification-close">&times;</button>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <main>
-        <!-- Hero Section -->
-        <section class="hero">
-            <div class="hero-container">
-                <h1>Unemployment Insurance Claims</h1>
-                <p>Submit your unemployment insurance claim quickly and securely through our modernized platform.</p>
-            </div>
-        </section>
-
-        <!-- Notification Area -->
-        <div id="notification" class="notification" style="display: none;">
-            <div class="notification-content">
-                <span id="notification-message"></span>
-                <button id="notification-close" class="notification-close">&times;</button>
-            </div>
-        </div>
-
         <!-- Claim Form Section -->
         <section id="submit-claim" class="claim-form-section">
             <div class="container">
@@ -36,7 +623,7 @@
                     </div>
 
                     <form id="claimForm" class="claim-form">
-					<!-- Personal Information -->
+                        <!-- Personal Information -->
                         <div class="form-section">
                             <h3>Personal Information</h3>
                             <div class="form-grid">
@@ -66,7 +653,8 @@
                                 </div>
                             </div>
                         </div>
-				<!-- Address Information -->
+
+                        <!-- Address Information -->
                         <div class="form-section">
                             <h3>Address Information</h3>
                             <div class="form-grid">
@@ -101,7 +689,8 @@
                                 </div>
                             </div>
                         </div>
-				<!-- Employment Information -->
+
+                        <!-- Employment Information -->
                         <div class="form-section">
                             <h3>Employment Information</h3>
                             <div class="form-grid">
@@ -122,7 +711,9 @@
                                     <input type="date" id="endDate" name="employmentDates.endDate" required>
                                 </div>
                             </div>
-				<!-- Separation Information -->
+                        </div>
+
+                        <!-- Separation Information -->
                         <div class="form-section">
                             <h3>Separation Information</h3>
                             <div class="form-grid">
@@ -143,7 +734,8 @@
                                 </div>
                             </div>
                         </div>
-				<!-- Wage Information -->
+
+                        <!-- Wage Information -->
                         <div class="form-section">
                             <h3>Wage Information</h3>
                             <div class="form-grid">
@@ -168,8 +760,9 @@
                     </form>
                 </div>
             </div>
-        </section>	
-				<!-- Claim Status Section -->
+        </section>
+
+        <!-- Claim Status Section -->
         <section id="claim-status" class="status-section">
             <div class="container">
                 <div class="status-container" style="display: none;">
@@ -185,20 +778,439 @@
             </div>
         </section>
     </main>
-	<!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <p>&copy; 2025 UI Modernization Demo - Claimant Services</p>
-                <div class="footer-links">
-                    <a href="#submit-claim">Submit Claim</a>
-                    <a href="#claim-status">Check Status</a>
-                    <a href="/health">Service Health</a>
-                </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 - NASWA Claimant Services | Unemployment Insurance System</p>
+            <div class="footer-links">
+                <a href="#submit-claim">Submit Claim</a>
+                <a href="#claim-status">Check Status</a>
+                <a href="/health">Service Health</a>
             </div>
         </div>
     </footer>
 
-    <script src="app.js"></script>
+    <script>
+        // GraphQL endpoint
+        const GRAPHQL_ENDPOINT = '/graphql';
+
+        // Global variables
+        let currentClaim = null;
+
+        // DOM Elements
+        const claimForm = document.getElementById('claimForm');
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+        const notificationClose = document.getElementById('notification-close');
+        const submitText = document.getElementById('submit-text');
+        const submitLoading = document.getElementById('submit-loading');
+        const statusContainer = document.querySelector('.status-container');
+        const claimDetails = document.getElementById('claim-details');
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            setupFormValidation();
+            
+            // Check if there's a claim ID in URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const claimId = urlParams.get('claimId');
+            if (claimId) {
+                fetchClaimStatus(claimId);
+            }
+        });
+
+        // Event Listeners
+        function setupEventListeners() {
+            claimForm.addEventListener('submit', handleClaimSubmission);
+            notificationClose.addEventListener('click', hideNotification);
+            
+            // Format SSN input
+            const ssnInput = document.getElementById('ssn');
+            ssnInput.addEventListener('input', formatSSN);
+            
+            // Format EIN input
+            const einInput = document.getElementById('employerEin');
+            einInput.addEventListener('input', formatEIN);
+            
+            // Navigation smooth scrolling
+            document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        }
+
+        // Form validation setup
+        function setupFormValidation() {
+            // Add real-time validation feedback
+            const inputs = claimForm.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('blur', validateField);
+                input.addEventListener('input', clearFieldError);
+            });
+        }
+
+        // Validate individual field
+        function validateField(event) {
+            const field = event.target;
+            const value = field.value.trim();
+            
+            // Remove any existing error styling
+            field.classList.remove('error');
+            
+            // Check if required field is empty
+            if (field.hasAttribute('required') && !value) {
+                field.classList.add('error');
+                return false;
+            }
+            
+            // Specific validations
+            switch (field.id) {
+                case 'ssn':
+                    if (!/^\d{3}-\d{2}-\d{4}$/.test(value)) {
+                        field.classList.add('error');
+                        return false;
+                    }
+                    break;
+                case 'email':
+                    if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(value)) {
+                        field.classList.add('error');
+                        return false;
+                    }
+                    break;
+                case 'employerEin':
+                    if (!/^\d{2}-\d{7}$/.test(value)) {
+                        field.classList.add('error');
+                        return false;
+                    }
+                    break;
+            }
+            
+            return true;
+        }
+
+        // Clear field error styling
+        function clearFieldError(event) {
+            event.target.classList.remove('error');
+        }
+
+        // Format SSN input
+        function formatSSN(event) {
+            let value = event.target.value.replace(/\D/g, '');
+            if (value.length >= 3) {
+                value = value.substring(0, 3) + '-' + value.substring(3);
+            }
+            if (value.length >= 6) {
+                value = value.substring(0, 6) + '-' + value.substring(6, 10);
+            }
+            event.target.value = value;
+        }
+
+        // Format EIN input
+        function formatEIN(event) {
+            let value = event.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '-' + value.substring(2, 9);
+            }
+            event.target.value = value;
+        }
+
+        // Handle claim submission
+        async function handleClaimSubmission(event) {
+            event.preventDefault();
+            
+            // Validate form
+            if (!validateForm()) {
+                showNotification('Please correct the errors in the form.', 'error');
+                return;
+            }
+            
+            // Disable submit button and show loading
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            submitLoading.style.display = 'inline';
+            
+            try {
+                // Collect form data
+                const formData = collectFormData();
+                
+                // Submit claim via GraphQL
+                const result = await submitClaim(formData);
+                
+                if (result.success) {
+                    currentClaim = result.claim;
+                    showNotification('Claim submitted successfully!', 'success');
+                    
+                    // Show claim status
+                    displayClaimStatus(result.claim);
+                    
+                    // Scroll to status section
+                    document.getElementById('claim-status').scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    
+                    // Reset form
+                    claimForm.reset();
+                } else {
+                    showNotification(`Error submitting claim: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Submission error:', error);
+                showNotification('An unexpected error occurred. Please try again.', 'error');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitText.style.display = 'inline';
+                submitLoading.style.display = 'none';
+            }
+        }
+
+        // Validate entire form
+        function validateForm() {
+            const inputs = claimForm.querySelectorAll('input[required], select[required]');
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!validateField({ target: input })) {
+                    isValid = false;
+                }
+            });
+            
+            return isValid;
+        }
+
+        // Collect form data
+        function collectFormData() {
+            const formData = new FormData(claimForm);
+            const data = {};
+            
+            // Basic fields
+            data.firstName = formData.get('firstName');
+            data.lastName = formData.get('lastName');
+            data.ssn = formData.get('ssn');
+            data.dateOfBirth = formData.get('dateOfBirth');
+            data.email = formData.get('email');
+            data.phone = formData.get('phone');
+            
+            // Address
+            data.address = {
+                street: formData.get('address.street'),
+                city: formData.get('address.city'),
+                state: formData.get('address.state'),
+                zipCode: formData.get('address.zipCode')
+            };
+            
+            // Employer
+            data.employer = {
+                name: formData.get('employer.name'),
+                ein: formData.get('employer.ein'),
+            };
+            
+            // Employment dates
+            data.employmentDates = {
+                startDate: formData.get('employmentDates.startDate'),
+                endDate: formData.get('employmentDates.endDate')
+            };
+            
+            // Separation info
+            data.separationReason = formData.get('separationReason');
+            data.separationDetails = formData.get('separationDetails') || '';
+            
+            // Wage data
+            data.wageData = {
+                lastQuarterEarnings: parseFloat(formData.get('wageData.lastQuarterEarnings')),
+                annualEarnings: parseFloat(formData.get('wageData.annualEarnings'))
+            };
+            
+            return data;
+        }
+
+        // Submit claim via GraphQL
+        async function submitClaim(claimData) {
+            const mutation = `
+                mutation CreateClaim($input: ClaimInput!) {
+                    createClaim(input: $input) {
+                        id
+                        claimId
+                        firstName
+                        lastName
+                        status
+                        statusDisplayName
+                        submissionTimestamp
+                        weeklyBenefitAmount
+                        maximumBenefitAmount
+                    }
+                }
+            `;
+            
+            try {
+                const response = await fetch(GRAPHQL_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: mutation,
+                        variables: { input: claimData }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.errors) {
+                    return {
+                        success: false,
+                        error: result.errors[0].message
+                    };
+                }
+                
+                return {
+                    success: true,
+                    claim: result.data.createClaim
+                };
+            } catch (error) {
+                console.error('GraphQL error:', error);
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // Fetch claim status
+        async function fetchClaimStatus(claimId) {
+            const query = `
+                query GetClaim($claimId: String!) {
+                    getClaim(claimId: $claimId) {
+                        id
+                        claimId
+                        firstName
+                        lastName
+                        status
+                        statusDisplayName
+                        submissionTimestamp
+                        lastUpdated
+                        weeklyBenefitAmount
+                        maximumBenefitAmount
+                        statusHistory {
+                            status
+                            timestamp
+                            notes
+                        }
+                    }
+                }
+            `;
+            
+            try {
+                const response = await fetch(GRAPHQL_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query,
+                        variables: { claimId }
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.errors) {
+                    showNotification(`Error fetching claim: ${result.errors[0].message}`, 'error');
+                    return;
+                }
+                
+                if (result.data.getClaim) {
+                    currentClaim = result.data.getClaim;
+                    displayClaimStatus(result.data.getClaim);
+                } else {
+                    showNotification('Claim not found.', 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching claim:', error);
+                showNotification('Error fetching claim status.', 'error');
+            }
+        }
+
+        // Display claim status
+        function displayClaimStatus(claim) {
+            statusContainer.style.display = 'block';
+            
+            const statusBadgeClass = claim.status.toLowerCase().replace(/([A-Z])/g, '-$1').toLowerCase();
+            
+            claimDetails.innerHTML = `
+                <div class="claim-summary">
+                    <div class="claim-info">
+                        <h4>Claim Information</h4>
+                        <p><strong>Claim ID:</strong> <span>${claim.claimId}</span></p>
+                        <p><strong>Applicant:</strong> <span>${claim.firstName} ${claim.lastName}</span></p>
+                        <p><strong>Status:</strong> <span class="status-badge ${statusBadgeClass}">${claim.statusDisplayName}</span></p>
+                        <p><strong>Submitted:</strong> <span>${formatDate(claim.submissionTimestamp)}</span></p>
+                        <p><strong>Last Updated:</strong> <span>${formatDate(claim.lastUpdated)}</span></p>
+                    </div>
+                    
+                    ${claim.weeklyBenefitAmount ? `
+                        <div class="claim-info">
+                            <h4>Benefit Information</h4>
+                            <p><strong>Weekly Benefit:</strong> <span>${claim.weeklyBenefitAmount.toFixed(2)}</span></p>
+                            <p><strong>Maximum Benefit:</strong> <span>${claim.maximumBenefitAmount.toFixed(2)}</span></p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="status-timeline">
+                    <h4>Status History</h4>
+                    ${(claim.statusHistory || []).map(entry => `
+                        <div class="timeline-item">
+                            <div class="timeline-date">${formatDate(entry.timestamp)}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-status">${entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}</div>
+                                ${entry.notes ? `<div class="timeline-notes">${entry.notes}</div>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            notificationMessage.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'flex';
+            
+            // Auto-hide success notifications after 5 seconds
+            if (type === 'success') {
+                setTimeout(hideNotification, 5000);
+            }
+        }
+
+        // Hide notification
+        function hideNotification() {
+            notification.style.display = 'none';
+        }
+    </script>
 </body>
 </html>
