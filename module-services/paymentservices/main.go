@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -272,9 +271,11 @@ func (ps *PaymentService) sendHeartbeat() error {
 func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
 	// Try multiple possible claims endpoints
 	endpoints := []string{
+		"/api/claims?status=AWAITING_PAYMENT",
 		"/api/claims?status=AWAITING_PAYMENT_PROCESSING",
+		"/api/claims/status/AWAITING_PAYMENT",
 		"/api/claims/status/AWAITING_PAYMENT_PROCESSING",
-		"/claims?status=AWAITING_PAYMENT_PROCESSING",
+		"/claims?status=AWAITING_PAYMENT",
 		"/api/claims", // Get all claims and filter
 	}
 	
@@ -288,7 +289,7 @@ func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
 			// Filter claims by status if we got all claims
 			var filteredClaims []ClaimData
 			for _, claim := range response.Claims {
-				if claim.StatusCode == "AWAITING_PAYMENT_PROCESSING" {
+				if claim.StatusCode == "AWAITING_PAYMENT" || claim.StatusCode == "AWAITING_PAYMENT_PROCESSING" {
 					filteredClaims = append(filteredClaims, claim)
 				}
 			}
