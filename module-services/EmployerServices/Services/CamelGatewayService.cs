@@ -25,7 +25,7 @@ namespace EmployerServices.Services
                 {
                     serviceId = _config["CamelGateway:ServiceName"],
                     name = "Employer Services",  // 🔥 FIXED: Use proper display name
-                    technology = "DOTNET",
+                    technology = "C# + .NET",
                     protocol = "HTTP",
                     endpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}",
 		    healthEndpoint = $"http://employer-services:{_config["CamelGateway:ServicePort"]}/api/health"
