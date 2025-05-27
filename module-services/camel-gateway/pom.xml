@@ -232,4 +232,32 @@
                             <goal>compile</goal>
                             <goal>compile-custom</goal>
                         </goals>
-                    </executio
+                    </execution>
+                </executions>
+            </plugin>
+            -->
+            
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring.boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.playground.camel.CamelGatewayApp</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
