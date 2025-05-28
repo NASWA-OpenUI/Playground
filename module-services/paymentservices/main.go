@@ -342,7 +342,7 @@ func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
 			desc:   "POST to payment update endpoint",
 		},
 		{
-			url:    "/api/claims/" + payment.ClaimID,
+			url:    "/api/claims/" + payment.ClaimID + "/status",
 			method: "PUT",
 			desc:   "RESTful PUT by ID",
 		},
