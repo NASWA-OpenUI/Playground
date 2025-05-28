@@ -318,32 +318,54 @@ func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
 			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
 	}
 
-	log.Printf("🔄 Sending payment update to Camel Gateway...")
+	log.Printf("🔄 Sending payment update to Camel Gateway for claim %s...", payment.ClaimID)
 	
-	// Try multiple possible update endpoints
-	endpoints := []string{
-		"/api/claims/update",
-		"/api/claims/" + payment.ClaimID + "/status",
-		"/claims/update",
-		"/api/payment/update",
+	// Use the same endpoint pattern as polling, but with PUT for updates
+	// Try both RESTful approaches that are commonly used
+	endpoints := []struct {
+		url    string
+		method string
+		desc   string
+	}{
+		{
+			url:    "/api/claims/" + payment.ClaimID,
+			method: "PUT",
+			desc:   "RESTful update by ID",
+		},
+		{
+			url:    "/api/claims",
+			method: "PUT", 
+			desc:   "Bulk update with ID in payload",
+		},
+		{
+			url:    "/api/claims/" + payment.ClaimID,
+			method: "PATCH",
+			desc:   "RESTful partial update by ID",
+		},
 	}
 	
 	for _, endpoint := range endpoints {
-		response, err := ps.makeHTTPRequest("POST", endpoint, request)
+		log.Printf("🔄 Trying %s: %s %s", endpoint.desc, endpoint.method, endpoint.url)
+		
+		response, err := ps.makeHTTPRequest(endpoint.method, endpoint.url, request)
 		if err != nil {
-			continue // Try next endpoint
+			log.Printf("⚠️ %s failed: %v", endpoint.desc, err)
+			continue
 		}
 		
 		if response.Success {
-			log.Printf("✅ Payment update successful via %s: %s", endpoint, response.Message)
+			log.Printf("✅ Payment update successful via %s (%s %s): %s", 
+				endpoint.desc, endpoint.method, endpoint.url, response.Message)
 			log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
 				payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
 			return nil
+		} else {
+			log.Printf("⚠️ %s rejected: %s", endpoint.desc, response.Message)
 		}
 	}
 	
-	log.Printf("⚠️ Payment update failed on all endpoints for claim %s", payment.ClaimID)
-	return fmt.Errorf("payment update failed on all endpoints")
+	log.Printf("❌ All payment update attempts failed for claim %s", payment.ClaimID)
+	return fmt.Errorf("payment update failed on all endpoints for claim %s", payment.ClaimID)
 }
 
 func (ps *PaymentService) calculateBenefits(claim ClaimData) PaymentCalculation {
