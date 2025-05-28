@@ -320,27 +320,36 @@ func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
 
 	log.Printf("🔄 Sending payment update to Camel Gateway for claim %s...", payment.ClaimID)
 	
-	// Use the same endpoint pattern as polling, but with PUT for updates
-	// Try both RESTful approaches that are commonly used
+	// Try different approaches - camel-services might use POST for commands/updates
 	endpoints := []struct {
 		url    string
 		method string
 		desc   string
 	}{
 		{
+			url:    "/api/claims/update",
+			method: "POST",
+			desc:   "POST to update endpoint",
+		},
+		{
+			url:    "/api/claims/" + payment.ClaimID + "/update",
+			method: "POST",
+			desc:   "POST to claim-specific update",
+		},
+		{
+			url:    "/api/payment/update",
+			method: "POST",
+			desc:   "POST to payment update endpoint",
+		},
+		{
 			url:    "/api/claims/" + payment.ClaimID,
 			method: "PUT",
-			desc:   "RESTful update by ID",
+			desc:   "RESTful PUT by ID",
 		},
 		{
 			url:    "/api/claims",
-			method: "PUT", 
-			desc:   "Bulk update with ID in payload",
-		},
-		{
-			url:    "/api/claims/" + payment.ClaimID,
-			method: "PATCH",
-			desc:   "RESTful partial update by ID",
+			method: "POST", 
+			desc:   "POST to claims endpoint",
 		},
 	}
 	
