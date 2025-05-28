@@ -1,7 +1,7 @@
 @page "/Verify/{claimId}"
 @model EmployerServices.Pages.VerifyModel
 @{
-    ViewData["Title"] = $"Verify Claim - {Model.Claim?.ClaimReferenceId}";
+    ViewData["Title"] = $"NASWA | Employer Services - Verify Claim {Model.Claim?.ClaimReferenceId}";
 }
 
 <!DOCTYPE html>
@@ -14,13 +14,14 @@
         :root {
             --primary-color: #2c3e50;
             --secondary-color: #3498db;
+            --accent-color: #e74c3c;
             --success-color: #2ecc71;
             --warning-color: #f39c12;
-            --danger-color: #e74c3c;
             --light-color: #ecf0f1;
             --text-color: #333;
             --background-color: #f8f9fa;
-            --border-color: #ddd;
+            --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         }
 
         * {
@@ -31,112 +32,189 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
             background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-top: 140px;
         }
 
-        .container {
-            max-width: 900px;
+        /* Header with sophisticated metallic gradient */
+        header {
+            background: linear-gradient(135deg, #F0F0F0, #E0E0E0, #D8D8D8);
+            color: #2c3e50;
+            padding: 2rem 0;
+            box-shadow: var(--card-shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 2rem;
         }
 
-        .header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 30px 0;
-            text-align: center;
-            margin-bottom: 30px;
+        .logo {
+            display: flex;
+            align-items: center;
         }
 
-        .header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+        .logo-icon {
+            height: 80px;
+            width: auto;
+            margin-right: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .logo p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin: 0;
         }
 
         .nav-link {
-            display: inline-block;
-            color: white;
+            color: #2c3e50;
             text-decoration: none;
-            padding: 8px 16px;
-            background-color: rgba(255,255,255,0.2);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
             border-radius: 4px;
-            margin-top: 10px;
             transition: background-color 0.3s ease;
         }
 
         .nav-link:hover {
-            background-color: rgba(255,255,255,0.3);
+            background-color: rgba(44, 62, 80, 0.1);
         }
 
+        /* Container */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Notification Styles */
+        .notification {
+            margin-bottom: 2rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .notification.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .notification.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid var(--success-color);
+        }
+
+        /* Form Container */
         .form-container {
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: var(--card-shadow);
             overflow: hidden;
         }
 
-        .section {
-            padding: 30px;
-            border-bottom: 1px solid var(--border-color);
+        .form-section {
+            padding: 2rem;
+            border-bottom: 1px solid #f1f3f4;
         }
 
-        .section:last-child {
+        .form-section:last-child {
             border-bottom: none;
         }
 
         .section-title {
             color: var(--primary-color);
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--light-color);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f3f4;
         }
 
+        /* Claimant Info Grid */
+        .claimant-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .claimant-item {
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .claimant-item strong {
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Comparison Grid */
         .comparison-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 20px;
+            gap: 2rem;
+            margin-top: 1rem;
         }
 
         .comparison-side {
-            padding: 20px;
-            border-radius: 6px;
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
         }
 
         .claimed-side {
-            background-color: #fff3cd;
             border-left: 4px solid var(--warning-color);
+            background: #fff8f0;
         }
 
         .verify-side {
-            background-color: #d1ecf1;
             border-left: 4px solid var(--secondary-color);
+            background: #f0f9ff;
         }
 
         .side-title {
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 1.5rem;
             font-size: 1.1rem;
         }
 
         .claimed-side .side-title {
-            color: #856404;
+            color: #b8860b;
         }
 
         .verify-side .side-title {
-            color: #0c5460;
+            color: #1e40af;
         }
 
+        /* Form Styles */
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 1.5rem;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 0.5rem;
             font-weight: 500;
             color: var(--primary-color);
         }
@@ -145,11 +223,11 @@
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         .form-group input:focus,
@@ -163,26 +241,22 @@
         .readonly-value {
             font-weight: 500;
             color: #555;
-            padding: 8px 0;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f1f3f4;
         }
 
-        .actions {
-            padding: 30px;
-            text-align: center;
-            background-color: #f8f9fa;
-        }
-
+        /* Button styles */
         .btn {
             display: inline-block;
-            padding: 12px 30px;
-            border: none;
+            padding: 0.75rem 1.5rem;
             border-radius: 4px;
-            font-size: 1rem;
-            font-weight: 500;
             text-decoration: none;
+            font-weight: 500;
+            border: none;
             cursor: pointer;
+            font-size: 1rem;
             transition: all 0.3s ease;
-            margin: 0 10px;
+            margin: 0 0.5rem;
         }
 
         .btn-primary {
@@ -193,6 +267,7 @@
         .btn-primary:hover {
             background-color: #27ae60;
             transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .btn-secondary {
@@ -202,61 +277,95 @@
 
         .btn-secondary:hover {
             background-color: #5a6268;
+            transform: translateY(-1px);
         }
 
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
+        .form-actions {
+            background: #f8f9fa;
+            padding: 2rem;
+            text-align: center;
+            border-top: 2px solid #f1f3f4;
         }
 
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
+        .error-state {
+            background: white;
+            border-radius: 8px;
+            padding: 3rem;
+            box-shadow: var(--card-shadow);
+            text-align: center;
         }
 
-        @@media (max-width: 768px) {
+        .error-state h3 {
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 120px;
+            }
+
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
             .comparison-grid {
                 grid-template-columns: 1fr;
-                gap: 20px;
+                gap: 1rem;
             }
-            
-            .container {
-                padding: 10px;
+
+            .claimant-grid {
+                grid-template-columns: 1fr;
             }
-            
+
+            .form-section {
+                padding: 1.5rem;
+            }
+
             .btn {
                 display: block;
-                margin: 5px 0;
+                margin: 0.5rem 0;
+            }
+
+            .form-actions {
+                padding: 1.5rem;
             }
         }
     </style>
 </head>
+
 <body>
-    <div class="header">
-        <div class="container">
-            <h1>Claim Verification</h1>
-            <p>Review and verify employment information for claim @Model.ClaimId</p>
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                <img src="/static/naswa_logo.png" alt="NASWA Logo" class="logo-icon">
+                <div>
+                    <h1>Claim Verification</h1>
+                    <p>Review and verify employment information for claim @Model.ClaimId</p>
+                </div>
+            </div>
             <a href="/" class="nav-link">← Back to Dashboard</a>
         </div>
-    </div>
+    </header>
 
     <div class="container">
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
-            <div class="error">
+            <div class="notification error">
                 @Model.ErrorMessage
             </div>
         }
 
         @if (!string.IsNullOrEmpty(Model.SuccessMessage))
         {
-            <div class="success">
+            <div class="notification success">
                 @Model.SuccessMessage
             </div>
         }
@@ -265,26 +374,26 @@
         {
             <form method="post" class="form-container">
                 <!-- Claimant Information -->
-                <div class="section">
+                <div class="form-section">
                     <h2 class="section-title">📋 Claimant Information</h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                        <div>
+                    <div class="claimant-grid">
+                        <div class="claimant-item">
                             <strong>Name:</strong> @Model.Claim.ClaimantName
                         </div>
-                        <div>
+                        <div class="claimant-item">
                             <strong>Email:</strong> @Model.Claim.ClaimantEmail
                         </div>
-                        <div>
+                        <div class="claimant-item">
                             <strong>Phone:</strong> @Model.Claim.ClaimantPhone
                         </div>
-                        <div>
+                        <div class="claimant-item">
                             <strong>Claim ID:</strong> @Model.Claim.ClaimReferenceId
                         </div>
                     </div>
                 </div>
 
                 <!-- Employment Verification -->
-                <div class="section">
+                <div class="form-section">
                     <h2 class="section-title">💼 Employment Verification</h2>
                     <div class="comparison-grid">
                         <!-- What Claimant Said -->
@@ -355,7 +464,7 @@
                 </div>
 
                 <!-- Additional Notes -->
-                <div class="section">
+                <div class="form-section">
                     <h2 class="section-title">📝 Verification Notes</h2>
                     <div class="form-group">
                         <label for="VerificationNotes">Additional Notes (optional):</label>
@@ -371,7 +480,7 @@
                 </div>
 
                 <!-- Actions -->
-                <div class="actions">
+                <div class="form-actions">
                     <button type="submit" class="btn btn-primary">✅ Submit Verification</button>
                     <a href="/" class="btn btn-secondary">❌ Cancel</a>
                 </div>
@@ -379,12 +488,67 @@
         }
         else
         {
-            <div class="error">
+            <div class="error-state">
                 <h3>Claim Not Found</h3>
                 <p>The claim "@Model.ClaimId" could not be found or has already been processed.</p>
                 <a href="/" class="btn btn-secondary">← Back to Dashboard</a>
             </div>
         }
     </div>
+
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const startDateInput = document.getElementById('VerifiedStartDate');
+            const endDateInput = document.getElementById('VerifiedEndDate');
+            const wagesInput = document.getElementById('VerifiedWages');
+            
+            // Add client-side validation
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const startDate = new Date(startDateInput.value);
+                    const endDate = new Date(endDateInput.value);
+                    const wages = parseFloat(wagesInput.value);
+                    
+                    // Validate date range
+                    if (startDate >= endDate) {
+                        e.preventDefault();
+                        alert('End date must be after start date.');
+                        endDateInput.focus();
+                        return;
+                    }
+                    
+                    // Validate wages
+                    if (wages < 0) {
+                        e.preventDefault();
+                        alert('Wages cannot be negative.');
+                        wagesInput.focus();
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '⏳ Submitting...';
+                });
+                
+                // Format wages input
+                wagesInput.addEventListener('blur', function() {
+                    const value = parseFloat(this.value);
+                    if (!isNaN(value)) {
+                        this.value = value.toFixed(2);
+                    }
+                });
+                
+                // Add visual feedback for form validation
+                [startDateInput, endDateInput, wagesInput].forEach(input => {
+                    input.addEventListener('input', function() {
+                        // Remove any error styling when user starts typing
+                        this.style.borderColor = '';
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
