@@ -368,13 +368,19 @@
 </head>
 <body>
     <header>
-    <div class="header-container">
-        <div class="logo">
-            <img src="{{ logo_src|default:'/static/naswa_logo.png' }}" alt="{{ logo_alt|default:'NASWA Logo' }}" />
+        <div class="header-container">
+            <div class="logo">
                 <div>
-                    <h1>{{ header_title|default:"NASWA Tax Services" }}</h1>
-                    <p>{{ header_subtitle|default:"Unemployment Insurance Tax Administration" }}</p>
+                    <h1>{% block header_title %}NASWA Tax Services{% endblock %}</h1>
+                    <p>{% block header_subtitle %}Unemployment Insurance Tax Administration{% endblock %}</p>
                 </div>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/" class="{% if request.endpoint == 'index' %}active{% endif %}">Dashboard</a></li>
+                    <li><a href="/rates" class="{% if request.endpoint == 'manage_rates' %}active{% endif %}">Tax Rates</a></li>
+                </ul>
+            </nav>
         </div>
     </header>
 
