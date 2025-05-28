@@ -467,7 +467,7 @@ func setupRoutes(ps *PaymentService) *gin.Engine {
 
 	// Load HTML templates
 	r.LoadHTMLGlob("templates/*")
-	r.Static("/static", "static")
+	r.StaticFile("/static/naswa_logo.png", "./static/naswa_logo.png")
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
