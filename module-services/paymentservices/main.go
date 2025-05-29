@@ -342,9 +342,9 @@ func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
 			desc:   "POST to payment update endpoint",
 		},
 		{
-    			url:    "/api/claims/" + payment.ClaimID + "/status",
-    			method: "PUT", 
-    			desc:   "RESTful PUT status update",
+			url:    "/api/claims/" + payment.ClaimID,
+			method: "PUT",
+			desc:   "RESTful PUT by ID",
 		},
 		{
 			url:    "/api/claims",
@@ -353,28 +353,21 @@ func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
 		},
 	}
 	
-	for _, endpoint := range endpoints {
-		log.Printf("🔄 Trying %s: %s %s", endpoint.desc, endpoint.method, endpoint.url)
-		
-		response, err := ps.makeHTTPRequest(endpoint.method, endpoint.url, request)
-		if err != nil {
-			log.Printf("⚠️ %s failed: %v", endpoint.desc, err)
-			continue
-		}
-		
-		if response.Success {
-			log.Printf("✅ Payment update successful via %s (%s %s): %s", 
-				endpoint.desc, endpoint.method, endpoint.url, response.Message)
-			log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
-				payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
-			return nil
-		} else {
-			log.Printf("⚠️ %s rejected: %s", endpoint.desc, response.Message)
-		}
+	response, err := ps.makeHTTPRequest(method, url, request)
+	if err != nil {
+		log.Printf("❌ Payment update failed: %v", err)
+		return fmt.Errorf("payment update failed: %v", err)
 	}
 	
-	log.Printf("❌ All payment update attempts failed for claim %s", payment.ClaimID)
-	return fmt.Errorf("payment update failed on all endpoints for claim %s", payment.ClaimID)
+	if response.Success {
+		log.Printf("✅ Payment update successful: %s", response.Message)
+		log.Printf("✅ Payment processed for claim %s: WBA=$%.2f, Max Benefit=$%.2f", 
+			payment.ClaimID, payment.WeeklyBenefitAmount, payment.MaximumBenefit)
+		return nil
+	} else {
+		log.Printf("❌ Payment update rejected: %s", response.Message)
+		return fmt.Errorf("payment update rejected: %s", response.Message)
+	}
 }
 
 func (ps *PaymentService) calculateBenefits(claim ClaimData) PaymentCalculation {
