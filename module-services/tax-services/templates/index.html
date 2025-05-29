@@ -27,6 +27,67 @@
     </div>
 </div>
 
+<!-- Pending Claims Section -->
+{% if pending_claims %}
+<div class="table-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3>Claims Awaiting Tax Calculation</h3>
+        <button class="btn" onclick="processAllClaims()" id="processAllBtn" style="margin: 0;">
+            Process All Claims ({{ pending_claims|length }})
+        </button>
+    </div>
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Claim ID</th>
+                <th>Wages</th>
+                <th>Estimated Tax</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for claim in pending_claims %}
+            <tr id="claim-row-{{ claim.claimReferenceId }}">
+                <td>{{ claim.claimReferenceId }}</td>
+                <td>
+                    {% set wages = claim.totalAnnualEarnings or claim.basePeriodQ4 or 0 %}
+                    ${{ "{:,.2f}".format(wages) }}
+                </td>
+                <td>
+                    {% if tax_rates %}
+                        {% set estimated_tax = wages * (tax_rates.state_tax_rate + tax_rates.federal_tax_rate) %}
+                        ${{ "{:,.2f}".format(estimated_tax) }}
+                    {% else %}
+                        ${{ "{:,.2f}".format(wages * 0.026) }}
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn" 
+                            onclick="processClaim('{{ claim.claimReferenceId }}')" 
+                            id="btn-{{ claim.claimReferenceId }}"
+                            style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                        Apply Tax
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="table-container">
+    <h3>Claims Awaiting Tax Calculation</h3>
+    <div style="text-align: center; padding: 2rem; color: #666;">
+        <p>No claims currently awaiting tax calculation.</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Claims will appear here when they need tax processing.</p>
+        <button class="btn" onclick="refreshPage()" style="margin-top: 1rem;">
+            Refresh
+        </button>
+    </div>
+</div>
+{% endif %}
+
 <!-- Recent Tax Calculations Table -->
 <div class="table-container">
     <h3>Recent Tax Calculations</h3>
@@ -71,6 +132,7 @@
         <p style="color: #666; line-height: 1.6;">
             This tax calculation service processes unemployment insurance claims by computing state and federal tax obligations. 
             The service automatically polls for claims awaiting tax calculation and returns results via SOAP integration.
+            You can also manually process claims using the buttons above.
         </p>
     </div>
     
@@ -103,12 +165,118 @@
     </div>
 </div>
 
+<!-- Notification Area -->
+<div id="notification" class="notification">
+    <span id="notification-message"></span>
+    <button onclick="hideNotification()" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0 0 0 1rem;">✕</button>
+</div>
+
 <script>
+function processClaim(claimId) {
+    const button = document.getElementById(`btn-${claimId}`);
+    const originalText = button.textContent;
+    
+    // Show loading state
+    button.disabled = true;
+    button.textContent = 'Processing...';
+    
+    fetch(`/process-claim/${claimId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            // Remove the row from pending claims
+            const row = document.getElementById(`claim-row-${claimId}`);
+            if (row) {
+                row.style.opacity = '0.5';
+                setTimeout(() => {
+                    row.remove();
+                    // If no more pending claims, refresh to show empty state
+                    const tbody = document.querySelector('.table tbody');
+                    if (tbody && tbody.children.length === 0) {
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
+                }, 1000);
+            }
+        } else {
+            showNotification(data.message, 'error');
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error processing claim', 'error');
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+}
+
+function processAllClaims() {
+    const button = document.getElementById('processAllBtn');
+    const originalText = button.textContent;
+    
+    button.disabled = true;
+    button.textContent = 'Processing All...';
+    
+    fetch('/process-all-claims', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            // Refresh page after a short delay to show updated state
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showNotification(data.message, 'error');
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error processing claims', 'error');
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+}
+
+function showNotification(message, type) {
+    const notification = document.getElementById('notification');
+    const messageElement = document.getElementById('notification-message');
+    
+    messageElement.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.style.display = 'flex';
+    
+    // Auto-hide success notifications after 5 seconds
+    if (type === 'success') {
+        setTimeout(hideNotification, 5000);
+    }
+}
+
+function hideNotification() {
+    const notification = document.getElementById('notification');
+    notification.style.display = 'none';
+}
+
+function refreshPage() {
+    window.location.reload();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-refresh the page every 30 seconds to show new calculations
+    // Auto-refresh the page every 30 seconds to show new calculations and pending claims
     setInterval(function() {
-        // Only refresh if there are calculations and the page is visible
-        if (document.visibilityState === 'visible' && {{ 'true' if calculations else 'false' }}) {
+        if (document.visibilityState === 'visible') {
             window.location.reload();
         }
     }, 30000);
