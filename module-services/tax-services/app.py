@@ -167,6 +167,32 @@ class TaxService:
             logger.error(f"❌ Heartbeat failed: {e}")
             return False
     
+    def get_pending_claims(self):
+        """Get claims awaiting tax calculation for manual processing"""
+        try:
+            status = 'AWAITING_TAX_CALC'
+            logger.info(f"Getting pending claims with status: {status}")
+            
+            response = requests.get(
+                f"{self.gateway_url}/api/claims/status/{status}",
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                claims = response.json()
+                logger.info(f"Found {len(claims)} pending claims")
+                return claims
+            elif response.status_code == 404:
+                logger.warning("Claims endpoint not found")
+                return []
+            else:
+                logger.warning(f"Failed to get pending claims: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            logger.error(f"Failed to get pending claims: {e}")
+            return []
+    
     def poll_for_claims(self):
         """Poll camel gateway for claims awaiting tax calculation"""
         try:
@@ -264,11 +290,13 @@ class TaxService:
             })
             
             logger.info(f"Tax calculation completed for {claim_id}: State=${state_tax:.2f}, Federal=${federal_tax:.2f}, Total=${total_tax:.2f}")
+            return True
             
         except Exception as e:
             logger.error(f"Failed to process claim {claim_data.get('claimReferenceId', 'unknown')}: {e}")
             import traceback
             logger.error(f"Full error trace: {traceback.format_exc()}")
+            return False
     
     def send_tax_results_via_soap(self, claim_id, tax_data):
         """Send tax calculation results back to camel gateway via SOAP"""
@@ -357,9 +385,13 @@ def index():
         """)
         calculations = cursor.fetchall()
         
+        # Get pending claims from camel gateway
+        pending_claims = tax_service.get_pending_claims()
+        
         return render_template('index.html', 
                              tax_rates=tax_rates, 
-                             calculations=calculations)
+                             calculations=calculations,
+                             pending_claims=pending_claims)
         
     except Exception as e:
         logger.error(f"Error loading dashboard: {e}")
@@ -372,8 +404,9 @@ def manage_rates():
     """Manage tax rates"""
     if request.method == 'POST':
         try:
-            state_rate = float(request.form['state_rate'])
-            federal_rate = float(request.form['federal_rate'])
+            # Convert percentage input to decimal for storage
+            state_rate = float(request.form['state_rate']) / 100.0  # Convert % to decimal
+            federal_rate = float(request.form['federal_rate']) / 100.0  # Convert % to decimal
             
             conn = tax_service.get_db_connection()
             cursor = conn.cursor()
@@ -386,7 +419,7 @@ def manage_rates():
             conn.commit()
             conn.close()
             
-            logger.info(f"Tax rates updated: State={state_rate}, Federal={federal_rate}")
+            logger.info(f"Tax rates updated: State={state_rate*100}%, Federal={federal_rate*100}%")
             return redirect(url_for('index'))
             
         except Exception as e:
@@ -401,6 +434,84 @@ def manage_rates():
     conn.close()
     
     return render_template('rates.html', current_rates=current_rates)
+
+@app.route('/process-claim/<claim_id>', methods=['POST'])
+def process_claim_manual(claim_id):
+    """Manually process a specific claim"""
+    try:
+        # Get the specific claim from camel gateway
+        pending_claims = tax_service.get_pending_claims()
+        claim_data = None
+        
+        for claim in pending_claims:
+            if claim.get('claimReferenceId') == claim_id:
+                claim_data = claim
+                break
+        
+        if not claim_data:
+            return jsonify({'error': 'Claim not found'}), 404
+        
+        # Process the claim
+        success = tax_service.process_claim(claim_data)
+        
+        if success:
+            return jsonify({
+                'success': True, 
+                'message': f'Tax calculation completed for claim {claim_id}'
+            })
+        else:
+            return jsonify({
+                'success': False, 
+                'message': f'Failed to process claim {claim_id}'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Manual processing failed for claim {claim_id}: {e}")
+        return jsonify({
+            'success': False, 
+            'message': f'Error processing claim: {str(e)}'
+        }), 500
+
+@app.route('/process-all-claims', methods=['POST'])
+def process_all_claims_manual():
+    """Manually process all pending claims"""
+    try:
+        pending_claims = tax_service.get_pending_claims()
+        
+        if not pending_claims:
+            return jsonify({
+                'success': True, 
+                'message': 'No pending claims to process',
+                'processed': 0
+            })
+        
+        processed_count = 0
+        failed_count = 0
+        
+        for claim in pending_claims:
+            try:
+                if tax_service.process_claim(claim):
+                    processed_count += 1
+                else:
+                    failed_count += 1
+            except Exception as e:
+                logger.error(f"Failed to process claim {claim.get('claimReferenceId', 'unknown')}: {e}")
+                failed_count += 1
+        
+        return jsonify({
+            'success': True,
+            'message': f'Processed {processed_count} claims successfully' + 
+                      (f', {failed_count} failed' if failed_count > 0 else ''),
+            'processed': processed_count,
+            'failed': failed_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Manual processing of all claims failed: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error processing claims: {str(e)}'
+        }), 500
 
 @app.route('/health')
 def health():
