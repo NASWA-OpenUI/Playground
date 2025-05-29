@@ -15,12 +15,12 @@
         <div class="status-overview">
             <div class="status-card">
                 <div class="status-label">State Tax Rate</div>
-                <div class="status-value">{{ "%.2f"|format(current_rates.state_tax_rate) }}%</div>
+                <div class="status-value">{{ "%.2f"|format(current_rates.state_tax_rate * 100) }}%</div>
                 <div class="status-subtext">Current Rate</div>
             </div>
             <div class="status-card">
                 <div class="status-label">Federal Tax Rate</div>
-                <div class="status-value">{{ "%.2f"|format(current_rates.federal_tax_rate) }}%</div>
+                <div class="status-value">{{ "%.2f"|format(current_rates.federal_tax_rate * 100) }}%</div>
                 <div class="status-subtext">Current Rate</div>
             </div>
             <div class="status-card">
@@ -48,7 +48,7 @@
                        step="0.01" 
                        min="0" 
                        max="100" 
-                       value="{{ current_rates.state_tax_rate if current_rates else 2.00 }}"
+                       value="{{ "%.2f"|format(current_rates.state_tax_rate * 100) if current_rates else '2.00' }}"
                        placeholder="2.00"
                        required>
             </div>
@@ -60,7 +60,7 @@
                        step="0.01" 
                        min="0" 
                        max="100" 
-                       value="{{ current_rates.federal_tax_rate if current_rates else 0.60 }}"
+                       value="{{ "%.2f"|format(current_rates.federal_tax_rate * 100) if current_rates else '0.60' }}"
                        placeholder="0.60"
                        required>
             </div>
