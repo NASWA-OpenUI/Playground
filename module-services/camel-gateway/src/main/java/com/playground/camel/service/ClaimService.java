@@ -81,38 +81,42 @@ public class ClaimService {
     /**
      * Parse payment amounts from notes and store in claim
      */
+
     private void parseAndStorePaymentAmounts(Claim claim, String notes) {
-        try {
-            // Parse notes like: "Payment processed. WBA: $346.15, Max Benefit: $9000.00, First Payment: $316.15"
-            if (notes.contains("WBA: $") && notes.contains("Max Benefit: $")) {
-                
-                // Extract WBA
-                String wbaPattern = "WBA: \\$([0-9]+\\.?[0-9]*)";
-                java.util.regex.Pattern wbaRegex = java.util.regex.Pattern.compile(wbaPattern);
-                java.util.regex.Matcher wbaMatcher = wbaRegex.matcher(notes);
-                if (wbaMatcher.find()) {
-                    BigDecimal wba = new BigDecimal(wbaMatcher.group(1));
-                    claim.setWeeklyBenefitAmount(wba);
-                    logger.info("Extracted WBA: ${} for claim {}", wba, claim.getClaimReferenceId());
-                }
-                
-                // Extract Max Benefit
-                String maxPattern = "Max Benefit: \\$([0-9]+\\.?[0-9]*)";
-                java.util.regex.Pattern maxRegex = java.util.regex.Pattern.compile(maxPattern);
-                java.util.regex.Matcher maxMatcher = maxRegex.matcher(notes);
-                if (maxMatcher.find()) {
-                    BigDecimal maxBenefit = new BigDecimal(maxMatcher.group(1));
-                    claim.setMaximumBenefitAmount(maxBenefit);
-                    logger.info("Extracted Max Benefit: ${} for claim {}", maxBenefit, claim.getClaimReferenceId());
-                }
-                
-                logger.info("Successfully parsed and stored payment amounts for claim {}", claim.getClaimReferenceId());
+    try {
+        // Parse notes like: "Payment processed. WBA: $346.15, Max Benefit: $9000.00, First Payment: $316.15"
+        if (notes.contains("WBA: $") && notes.contains("Max Benefit: $")) {
+            
+            // Extract WBA
+            String wbaPattern = "WBA: \\$([0-9]+\\.?[0-9]*)";
+            java.util.regex.Pattern wbaRegex = java.util.regex.Pattern.compile(wbaPattern);
+            java.util.regex.Matcher wbaMatcher = wbaRegex.matcher(notes);
+            if (wbaMatcher.find()) {
+                BigDecimal wba = new BigDecimal(wbaMatcher.group(1));
+                claim.setWeeklyBenefitAmount(wba);
+                logger.info("Extracted WBA: ${} for claim {}", wba, claim.getClaimReferenceId());
             }
-        } catch (Exception e) {
-            logger.error("Failed to parse payment amounts from notes for claim {}: {}", claim.getClaimReferenceId(), e.getMessage());
-            // Don't fail the entire update if parsing fails
+            
+            // Extract Max Benefit
+            String maxPattern = "Max Benefit: \\$([0-9]+\\.?[0-9]*)";
+            java.util.regex.Pattern maxRegex = java.util.regex.Pattern.compile(maxPattern);
+            java.util.regex.Matcher maxMatcher = maxRegex.matcher(notes);
+            if (maxMatcher.find()) {
+                BigDecimal maxBenefit = new BigDecimal(maxMatcher.group(1));
+                claim.setMaximumBenefitAmount(maxBenefit);
+                logger.info("Extracted Max Benefit: ${} for claim {}", maxBenefit, claim.getClaimReferenceId());
+            }
+            
+            // ADD THIS LINE HERE:
+            claim.updateWorkflowStage(Claim.WorkflowStage.COMPLETED, "paymentservices");
+            
+            logger.info("Successfully parsed and stored payment amounts for claim {}", claim.getClaimReferenceId());
         }
+    } catch (Exception e) {
+        logger.error("Failed to parse payment amounts from notes for claim {}: {}", claim.getClaimReferenceId(), e.getMessage());
+        // Don't fail the entire update if parsing fails
     }
+}
 
     /**
      * Update workflow stage
