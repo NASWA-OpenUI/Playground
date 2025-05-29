@@ -91,7 +91,7 @@ class TaxService:
             if cursor.fetchone()[0] == 0:
                 cursor.execute("""
                     INSERT INTO tax_rates (state_tax_rate, federal_tax_rate) 
-                    VALUES (0.0200, 0.0060)
+                    VALUES (0.0200, 0.060)
                 """)
             
             conn.commit()
