@@ -544,7 +544,7 @@ def background_tasks():
             tax_service.send_heartbeat()
             
             # Poll for claims
-            tax_service.poll_for_claims()
+            #tax_service.poll_for_claims()
             
             time.sleep(POLL_INTERVAL)
             
