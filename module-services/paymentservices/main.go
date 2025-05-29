@@ -307,51 +307,22 @@ func (ps *PaymentService) pollForClaims() ([]ClaimData, error) {
 }
 
 func (ps *PaymentService) updateClaimPayment(payment PaymentCalculation) error {
-	request := PaymentUpdateRequest{
-		ClaimID:             payment.ClaimID,
-		Status:              "PAYMENT_PROCESSED",
-		WeeklyBenefitAmount: payment.WeeklyBenefitAmount,
-		MaximumBenefit:      payment.MaximumBenefit,
-		FirstPaymentAmount:  payment.FirstPaymentAmount,
-		UpdatedBy:           "paymentservices",
-		Notes:               fmt.Sprintf("Payment processed. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f", 
+	// Use the same format that employer services uses successfully
+	request := map[string]string{
+		"statusCode":        "PAYMENT_PROCESSED",
+		"statusDisplayName": "Payment Processed", 
+		"updatedBy":         "paymentservices",
+		"notes":             fmt.Sprintf("Payment processed. WBA: $%.2f, Max Benefit: $%.2f, First Payment: $%.2f", 
 			payment.WeeklyBenefitAmount, payment.MaximumBenefit, payment.FirstPaymentAmount),
 	}
 
 	log.Printf("🔄 Sending payment update to Camel Gateway for claim %s...", payment.ClaimID)
 	
-	// Try different approaches - camel-services might use POST for commands/updates
-	endpoints := []struct {
-		url    string
-		method string
-		desc   string
-	}{
-		{
-			url:    "/api/claims/update",
-			method: "POST",
-			desc:   "POST to update endpoint",
-		},
-		{
-			url:    "/api/claims/" + payment.ClaimID + "/update",
-			method: "POST",
-			desc:   "POST to claim-specific update",
-		},
-		{
-			url:    "/api/payment/update",
-			method: "POST",
-			desc:   "POST to payment update endpoint",
-		},
-		{
-			url:    "/api/claims/" + payment.ClaimID,
-			method: "PUT",
-			desc:   "RESTful PUT by ID",
-		},
-		{
-			url:    "/api/claims",
-			method: "POST", 
-			desc:   "POST to claims endpoint",
-		},
-	}
+	// Use the exact same endpoint that employer services uses successfully
+	url := "/api/claims/" + payment.ClaimID + "/status"
+	method := "PUT"
+	
+	log.Printf("🔄 Using verified endpoint: %s %s", method, url)
 	
 	response, err := ps.makeHTTPRequest(method, url, request)
 	if err != nil {
